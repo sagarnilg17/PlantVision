@@ -68,10 +68,18 @@ export default function ScanPage() {
   const startCamera = useCallback(async () => {
     setError(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } });
       if (videoRef.current) { videoRef.current.srcObject = stream; setStreaming(true); }
     } catch { setError('Camera permission denied.'); }
   }, []);
+
+  // FAB deep-links: /scan?mode=camera opens the camera, /scan?mode=upload opens the picker
+  useEffect(() => {
+    const mode = new URLSearchParams(window.location.search).get('mode');
+    if (mode === 'camera') startCamera();
+    else if (mode === 'upload') fileRef.current?.click();
+    if (mode) window.history.replaceState(null, '', '/scan');
+  }, [startCamera]);
 
   const stopCamera = useCallback(() => {
     const s = videoRef.current?.srcObject as MediaStream | null;
@@ -213,29 +221,54 @@ export default function ScanPage() {
         {/* ── Capture phase ── */}
         {!analysis && (
           <>
-            {/* Viewfinder */}
-            <div style={{ position: 'relative', borderRadius: T.r, overflow: 'hidden', background: '#0D1A0D', aspectRatio: '4/3', marginBottom: 14, border: `1px solid ${T.border}` }}>
-              <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', display: streaming ? 'block' : 'none' }} />
+            {/* Placeholder card (camera lives in the full-screen overlay below) */}
+            {!streaming && (
+              <div style={{ borderRadius: T.r, overflow: 'hidden', aspectRatio: '4/3', marginBottom: 14, border: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, background: T.greenLight }}>
+                <span style={{ fontSize: 36 }}>📷</span>
+                <span style={{ color: T.sub, fontSize: 13, fontWeight: 500 }}>3 angles · best identification</span>
+              </div>
+            )}
 
-              {!streaming && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 8, background: T.greenLight }}>
-                  <span style={{ fontSize: 36 }}>📷</span>
-                  <span style={{ color: T.sub, fontSize: 13, fontWeight: 500 }}>3 angles · best identification</span>
-                </div>
-              )}
+            {/* ── Full-screen camera ── */}
+            <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: '#000', display: streaming ? 'flex' : 'none', flexDirection: 'column' }}>
+              <video ref={videoRef} autoPlay playsInline muted
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
 
-              {/* Angle overlay */}
-              {streaming && (
-                <div style={{ position: 'absolute', top: 12, left: 12, right: 12, background: 'rgba(10,26,10,0.72)', borderRadius: T.rSm, padding: '10px 14px', backdropFilter: 'blur(4px)' }}>
+              {/* Top: close + angle guidance */}
+              <div style={{ position: 'relative', zIndex: 2, padding: 'calc(env(safe-area-inset-top, 0px) + 14px) 16px 0', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <button onClick={stopCamera}
+                  style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(10,26,10,0.6)', border: 'none', color: '#fff', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, backdropFilter: 'blur(6px)' }}>
+                  ✕
+                </button>
+                <div style={{ flex: 1, background: 'rgba(10,26,10,0.6)', borderRadius: T.rSm, padding: '10px 14px', backdropFilter: 'blur(6px)' }}>
                   <p style={{ margin: 0, color: '#fff', fontSize: 14, fontWeight: 600 }}>
                     {ANGLES[angleIdx].label} &nbsp;<span style={{ color: T.greenMid, fontSize: 12, fontWeight: 400 }}>({shots.length + 1}/3)</span>
                   </p>
-                  <p style={{ margin: '3px 0 0', color: 'rgba(200,230,200,0.85)', fontSize: 12 }}>{ANGLES[angleIdx].hint}</p>
+                  <p style={{ margin: '3px 0 0', color: 'rgba(200,230,200,0.9)', fontSize: 12 }}>{ANGLES[angleIdx].hint}</p>
                 </div>
-              )}
+              </div>
 
-              <canvas ref={canvasRef} style={{ display: 'none' }} />
+              {/* Bottom: captured thumbnails + shutter */}
+              <div style={{ position: 'relative', zIndex: 2, marginTop: 'auto', padding: '0 16px calc(env(safe-area-inset-bottom, 0px) + 28px)' }}>
+                {shots.length > 0 && (
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 18 }}>
+                    {shots.map((s, i) => (
+                      <div key={i} style={{ width: 48, height: 48, borderRadius: 10, overflow: 'hidden', border: `2px solid ${T.greenMid}` }}>
+                        <img src={s} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <button onClick={captureAngle} aria-label="Capture"
+                    style={{ width: 74, height: 74, borderRadius: '50%', background: 'transparent', border: '4px solid #fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                    <div style={{ width: 58, height: 58, borderRadius: '50%', background: '#fff' }} />
+                  </button>
+                </div>
+              </div>
             </div>
+
+            <canvas ref={canvasRef} style={{ display: 'none' }} />
 
             {/* Angle thumbnails */}
             {shots.length > 0 && (
@@ -268,12 +301,6 @@ export default function ScanPage() {
                 <button onClick={startCamera}
                   style={{ flex: 2, padding: '12px 0', background: T.green, color: '#fff', border: 'none', borderRadius: T.rSm, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                   {shots.length === 0 ? 'Open Camera' : 'Resume'}
-                </button>
-              )}
-              {streaming && (
-                <button onClick={captureAngle}
-                  style={{ flex: 2, padding: '12px 0', background: T.green, color: '#fff', border: 'none', borderRadius: T.rSm, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                  Capture
                 </button>
               )}
               {!streaming && shots.length < 3 && (

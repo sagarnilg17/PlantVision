@@ -161,7 +161,14 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
           {(plant.illustration_url || plant.image_urls?.[0]) && (
             <div style={{ flexShrink: 0, width: 140, height: 140, marginBottom: -20, zIndex: 2 }}>
               <img src={plant.illustration_url || plant.image_urls[0]} alt={plant.plant_name}
-                style={{ width: '100%', height: '100%', objectFit: plant.illustration_url ? 'contain' : 'cover', borderRadius: plant.illustration_url ? 0 : 20, filter: 'drop-shadow(0 3px 10px rgba(0,0,0,0.09))' }} />
+                style={{
+                  width: '100%', height: '100%',
+                  objectFit: plant.illustration_url ? 'contain' : 'cover',
+                  borderRadius: plant.illustration_url ? 0 : 20,
+                  // Illustrations are generated on a white canvas; multiply blends
+                  // the white away against the white hero so the art sits flat.
+                  mixBlendMode: plant.illustration_url ? 'multiply' : undefined,
+                }} />
             </div>
           )}
           <div style={{ flex: 1, paddingBottom: 20, paddingLeft: 16 }}>
