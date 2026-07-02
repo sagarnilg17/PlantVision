@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Plant Care — Case Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green:        #2E7D32;
+    --green-dark:   #1B5E20;
+    --green-light:  #E8F5E9;
+    --green-mid:    #C8E6C9;
+    --text:         #191D19;
+    --sub:          #4A5E4A;
+    --muted:        #8B9E8B;
+    --bg:           #F6FAF6;
+    --surface:      #FFFFFF;
+    --border:       #E0E8E0;
+    --r:            16px;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.6;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    background: linear-gradient(155deg, #2E7D32 0%, #1B5E20 55%, #133E16 100%);
+    padding: 96px 24px 80px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 320px; height: 320px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: -60px;
+    width: 240px; height: 240px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .hero-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.85);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 5px 14px;
+    border-radius: 50px;
+    margin-bottom: 24px;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .hero h1 {
+    font-size: clamp(36px, 6vw, 56px);
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+  .hero p {
+    font-size: 18px;
+    color: rgba(255,255,255,0.68);
+    max-width: 520px;
+    margin: 0 auto 40px;
+    line-height: 1.65;
+  }
+  .hero-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+  .hero-pill {
+    background: rgba(255,255,255,0.10);
+    color: rgba(255,255,255,0.8);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 50px;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+
+  /* ── Layout ── */
+  .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+  .section { padding: 72px 0; }
+  .section + .section { border-top: 1px solid var(--border); }
+
+  /* ── Typography ── */
+  .label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    margin-bottom: 12px;
+  }
+  h2 {
+    font-size: clamp(26px, 4vw, 36px);
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.6px;
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+  h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.3px;
+    margin-bottom: 8px;
+  }
+  p { color: var(--sub); line-height: 1.7; }
+
+  /* ── Stats bar ── */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border-radius: var(--r);
+    overflow: hidden;
+    margin-top: 48px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.05);
+  }
+  .stat {
+    background: var(--surface);
+    padding: 24px 20px;
+    text-align: center;
+  }
+  .stat-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--green);
+    letter-spacing: -1px;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  /* ── Feature grid ── */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+    margin-top: 40px;
+  }
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+  .feature-icon {
+    font-size: 28px;
+    margin-bottom: 14px;
+    display: block;
+  }
+
+  /* ── Screen mosaic ── */
+  .screens {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 40px;
+  }
+  .screen-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+  }
+  .screen-wrap img {
+    width: 100%;
+    display: block;
+  }
+  .screen-caption {
+    padding: 12px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  .screen-tall { grid-row: span 2; }
+
+  /* ── Phone mock ── */
+  .phone-row {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 48px;
+  }
+  .phone {
+    width: 220px;
+    flex-shrink: 0;
+    background: #1a1a1a;
+    border-radius: 40px;
+    padding: 12px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.22);
+  }
+  .phone-screen {
+    border-radius: 30px;
+    overflow: hidden;
+    background: var(--bg);
+    min-height: 420px;
+    position: relative;
+  }
+  .phone-screen img {
+    width: 100%;
+    display: block;
+    border-radius: 30px;
+  }
+  .phone-label {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-top: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+  }
+
+  /* ── Architecture ── */
+  .arch-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 36px;
+  }
+  .arch-node {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+  }
+  .arch-arrow {
+    color: var(--muted);
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .arch-node.highlight {
+    background: var(--green-light);
+    border-color: var(--green-mid);
+    color: var(--green-dark);
+  }
+
+  /* ── Tech stack ── */
+  .stack-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 32px;
+  }
+  .stack-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .stack-icon {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    background: var(--green-light);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .stack-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .stack-role { font-size: 11px; color: var(--muted); }
+
+  /* ── Design decisions ── */
+  .decision-list { margin-top: 32px; }
+  .decision {
+    display: flex;
+    gap: 20px;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .decision:last-child { border-bottom: none; }
+  .decision-num {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--green);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .decision-body h3 { margin-bottom: 6px; }
+  .decision-body p { font-size: 14px; }
+
+  /* ── Code block ── */
+  pre {
+    background: #1a1f1a;
+    color: #a8d5a2;
+    border-radius: 12px;
+    padding: 20px;
+    overflow-x: auto;
+    font-size: 12.5px;
+    line-height: 1.7;
+    margin-top: 16px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  .kw { color: #7ec8e3; }
+  .fn { color: #f8d57e; }
+  .str { color: #a8d5a2; }
+  .cm { color: #5a7a5a; }
+
+  /* ── Footer ── */
+  .footer {
+    background: var(--green-dark);
+    color: rgba(255,255,255,0.6);
+    text-align: center;
+    padding: 48px 24px;
+    font-size: 13px;
+  }
+  .footer a { color: rgba(255,255,255,0.85); text-decoration: none; font-weight: 600; }
+  .footer-title { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+
+  /* ── Note ── */
+  .note {
+    background: var(--green-light);
+    border: 1px solid var(--green-mid);
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 13px;
+    color: var(--green-dark);
+    font-weight: 500;
+    margin-top: 16px;
+  }
+  .note strong { font-weight: 700; }
+
+  @media (max-width: 640px) {
+    .screens { grid-template-columns: 1fr; }
+    .screen-tall { grid-row: auto; }
+    .arch-row { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Hero ──────────────────────────────────────────────────────────── -->
+<div class="hero">
+  <div class="hero-badge">Case Study · 2025</div>
+  <h1>Plant Care</h1>
+  <p>An AI-powered plant identification and care companion built as a PWA — from scan to personalised permaculture wisdom, all in one tap.</p>
+  <div class="hero-pills">
+    <span class="hero-pill">Next.js 16 App Router</span>
+    <span class="hero-pill">Supabase Auth + DB</span>
+    <span class="hero-pill">Google Gemini Vision</span>
+    <span class="hero-pill">PlantNet API</span>
+    <span class="hero-pill">Groq LLM</span>
+    <span class="hero-pill">Framer Motion</span>
+    <span class="hero-pill">Material 3</span>
+    <span class="hero-pill">PWA</span>
+  </div>
+</div>
+
+<!-- ── Overview ──────────────────────────────────────────────────────── -->
+<div class="container">
+<section class="section">
+  <p class="label">Overview</p>
+  <h2>What is Plant Care?</h2>
+  <p>
+    Plant Care is a mobile-first Progressive Web App that lets anyone photograph a plant, instantly identify it using PlantNet's species database cross-referenced with Gemini Vision, and receive tailored care instructions. The app tracks your entire plant collection, schedules watering reminders, monitors plant health, and surfaces personalised permaculture tips based on the plants you actually own.
+  </p>
+  <p style="margin-top: 12px;">
+    Built solo in under two weeks as a personal project turned product experiment. The entire stack — auth, AI, database, UI — is serverless and deploys to Vercel in a single <code>git push</code>.
+  </p>
+
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-value">3</div><div class="stat-label">AI APIs integrated</div></div>
+    <div class="stat"><div class="stat-value">12</div><div class="stat-label">Permaculture principles</div></div>
+    <div class="stat"><div class="stat-value">&lt;2s</div><div class="stat-label">Plant ID latency</div></div>
+    <div class="stat"><div class="stat-value">PWA</div><div class="stat-label">Installable, offline-ready</div></div>
+  </div>
+</section>
+
+<!-- ── Problem ───────────────────────────────────────────────────────── -->
+<section class="section">
+  <p class="label">Problem</p>
+  <h2>Why another plant app?</h2>
+  <p>
+    Existing plant apps either charge $9.99/month for species ID (PlantSnap, PictureThis) or give you generic care sheets that ignore your specific environment — light levels, watering schedule, companion planting. There's nothing that <em>learns your collection</em> and surfaces wisdom that's actually relevant to the plants on your windowsill.
+  </p>
+
+  <div class="feature-grid" style="margin-top: 32px;">
+    <div class="feature-card">
+      <span class="feature-icon">💸</span>
+      <h3>Expensive gatekeeping</h3>
+      <p style="font-size: 14px;">Most AI plant ID sits behind $8–15/month subscriptions for what's essentially one API call.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📋</span>
+      <h3>Generic care advice</h3>
+      <p style="font-size: 14px;">Care sheets are the same for every Monstera regardless of your window direction, watering frequency, or companion plants.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🔔</span>
+      <h3>No intelligent scheduling</h3>
+      <p style="font-size: 14px;">Static "water every 7 days" ignores light level, season, and actual plant stress signals the AI already detected.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Solution ──────────────────────────────────────────────────────── -->
+<section class="section">
+  <p class="label">Solution</p>
+  <h2>How it works</h2>
+
+  <div class="arch-row">
+    <div class="arch-node highlight">📷 Camera</div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-node">PlantNet Species ID<br><small style="color:#8B9E8B;font-weight:400">Top-3 candidates</small></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-node">Gemini Vision<br><small style="color:#8B9E8B;font-weight:400">Health analysis</small></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-node">Groq (Llama)<br><small style="color:#8B9E8B;font-weight:400">Care plan</small></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-node highlight">🌿 Dashboard</div>
+  </div>
+
+  <p style="margin-top: 28px;">
+    The scan pipeline runs three AI models in sequence: PlantNet narrows the species using a botanical visual model, Gemini Vision describes the specific plant's health and stress signs, and Groq synthesises personalised care instructions tuned to the identified species, light level, and existing watering schedule. Results are stored in Supabase and surfaced on the dashboard.
+  </p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <span class="feature-icon">🔍</span>
+      <h3>AI Plant Identification</h3>
+      <p style="font-size: 14px;">PlantNet returns top-3 species candidates with confidence scores. Gemini cross-validates with visual health analysis.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🧠</span>
+      <h3>Adaptive Care Engine</h3>
+      <p style="font-size: 14px;">Watering intervals adjust dynamically based on light level (low light = longer interval), season, and last-watered date.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🃏</span>
+      <h3>Stacked Tip Deck</h3>
+      <p style="font-size: 14px;">Permaculture tips rendered as a swipe-to-dismiss card stack. Most relevant tips (personalised to your plants) always surface first.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">💧</span>
+      <h3>Watering Urgency</h3>
+      <p style="font-size: 14px;">Plants overdue for water surface in an alert strip with quick-water button that logs the action and resets the schedule in one tap.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🔐</span>
+      <h3>Passwordless Auth</h3>
+      <p style="font-size: 14px;">Supabase OTP magic link + Google OAuth with PKCE flow. No passwords stored. New users land in the app in under 30 seconds.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📱</span>
+      <h3>PWA + Installable</h3>
+      <p style="font-size: 14px;">Manifest + service worker make it installable on iOS and Android. Web push notifications planned for watering reminders.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Screens ────────────────────────────────────────────────────────── -->
+<section class="section">
+  <p class="label">Screens</p>
+  <h2>Interface</h2>
+  <p>The entire UI is custom-built with inline styles referencing a shared M3-aligned token system — no component library. This gave full control over every motion and shadow.</p>
+
+  <div class="phone-row">
+    <div>
+      <div class="phone">
+        <div class="phone-screen" style="background: linear-gradient(155deg,#2E7D32,#1B5E20); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 24px; gap:16px;">
+          <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;">
+            <span style="font-size:28px;">🌿</span>
+          </div>
+          <div style="text-align:center;">
+            <p style="font-size:20px;font-weight:800;color:#fff;margin:0 0 4px;">Plant Care</p>
+            <p style="font-size:12px;color:rgba(255,255,255,0.6);margin:0;">Identify, track &amp; care</p>
+          </div>
+          <div style="width:100%;background:#fff;border-radius:10px;padding:12px;text-align:center;margin-top:8px;">
+            <p style="font-size:12px;font-weight:700;color:#3c4043;margin:0;">G Continue with Google</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;width:100%;">
+            <div style="flex:1;height:1px;background:rgba(255,255,255,0.2);"></div>
+            <span style="font-size:10px;color:rgba(255,255,255,0.4);">or use email</span>
+            <div style="flex:1;height:1px;background:rgba(255,255,255,0.2);"></div>
+          </div>
+          <div style="width:100%;background:rgba(255,255,255,0.1);border-radius:8px;padding:10px;"><p style="font-size:11px;color:rgba(255,255,255,0.4);margin:0;">you@example.com</p></div>
+          <div style="width:100%;background:#4CAF50;border-radius:8px;padding:10px;text-align:center;"><p style="font-size:12px;font-weight:700;color:#fff;margin:0;">Continue with email</p></div>
+          <p style="font-size:10px;color:rgba(255,255,255,0.3);text-align:center;margin-top:8px;">No password · Secure OTP</p>
+        </div>
+      </div>
+      <p class="phone-label">Sign In</p>
+    </div>
+
+    <div>
+      <div class="phone">
+        <div class="phone-screen" style="background:#F6FAF6; padding:0; overflow:hidden;">
+          <!-- Mini dashboard mockup -->
+          <div style="background:#fff;padding:20px 16px 0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <div>
+                <p style="font-size:9px;color:#8B9E8B;margin:0 0 1px;">Thursday, July 2</p>
+                <p style="font-size:16px;font-weight:800;color:#191D19;margin:0 0 1px;">My Garden</p>
+                <p style="font-size:9px;color:#4A5E4A;margin:0;">Hey, sagar 👋</p>
+              </div>
+              <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#2E7D32,#1B5E20);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;">S</div>
+            </div>
+            <div style="display:flex;border-top:1px solid #E0E8E0;">
+              <div style="flex:1;padding:8px 0;text-align:center;border-right:1px solid #E0E8E0;">
+                <p style="font-size:14px;font-weight:800;color:#191D19;margin:0;">4</p>
+                <p style="font-size:7px;color:#8B9E8B;text-transform:uppercase;letter-spacing:0.5px;margin:1px 0 0;font-weight:600;">Plants</p>
+              </div>
+              <div style="flex:1;padding:8px 0;text-align:center;border-right:1px solid #E0E8E0;">
+                <p style="font-size:14px;font-weight:800;color:#7D3C00;margin:0;">1</p>
+                <p style="font-size:7px;color:#8B9E8B;text-transform:uppercase;letter-spacing:0.5px;margin:1px 0 0;font-weight:600;">Water Today</p>
+              </div>
+              <div style="flex:1;padding:8px 0;text-align:center;">
+                <p style="font-size:14px;font-weight:800;color:#2E7D32;margin:0;">3</p>
+                <p style="font-size:7px;color:#8B9E8B;text-transform:uppercase;letter-spacing:0.5px;margin:1px 0 0;font-weight:600;">Thriving</p>
+              </div>
+            </div>
+          </div>
+          <div style="padding:12px;">
+            <!-- Stacked tip card mock -->
+            <p style="font-size:7px;color:#8B9E8B;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:0 0 8px;">Tips for Your Garden</p>
+            <div style="position:relative;height:115px;margin-bottom:12px;">
+              <!-- back card -->
+              <div style="position:absolute;inset:0;background:#FFF0F5;border:1px solid #FFD6E7;border-radius:16px;transform:scale(0.92) translateY(10px);z-index:1;"></div>
+              <div style="position:absolute;inset:0;background:#FFF8E1;border:1px solid #FFE082;border-radius:16px;transform:scale(0.96) translateY(5px);z-index:2;"></div>
+              <!-- top card -->
+              <div style="position:absolute;inset:0;background:#E8F5E9;border:1.5px solid #C8E6C9;border-radius:16px;z-index:3;padding:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                  <span style="font-size:7px;font-weight:800;color:#2E7D32;text-transform:uppercase;letter-spacing:0.6px;background:rgba(255,255,255,0.6);padding:2px 6px;border-radius:5px;">🤝 Companions</span>
+                  <span style="font-size:14px;">🌿</span>
+                </div>
+                <p style="font-size:10px;font-weight:800;color:#191D19;margin:0 0 4px;line-height:1.3;">Pothos + Snake Plant</p>
+                <p style="font-size:8.5px;color:#4A5E4A;line-height:1.5;margin:0;">Both are low-light plants — group them in the same spot for a shared microclimate.</p>
+              </div>
+            </div>
+            <!-- Dots -->
+            <div style="display:flex;justify-content:center;gap:3px;margin-bottom:10px;">
+              <div style="width:12px;height:4px;border-radius:2px;background:#2E7D32;"></div>
+              <div style="width:4px;height:4px;border-radius:2px;background:#E0E8E0;"></div>
+              <div style="width:4px;height:4px;border-radius:2px;background:#E0E8E0;"></div>
+              <div style="width:4px;height:4px;border-radius:2px;background:#E0E8E0;"></div>
+            </div>
+            <!-- Plant card -->
+            <div style="background:#fff;border:1px solid #E0E8E0;border-radius:14px;padding:10px;display:flex;gap:8px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+              <div style="width:46px;height:46px;border-radius:10px;background:#E8F5E9;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <span style="font-size:18px;font-weight:800;color:#2E7D32;">M</span>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <p style="font-size:11px;font-weight:700;color:#191D19;margin:0 0 1px;">Monty</p>
+                <p style="font-size:8px;color:#8B9E8B;font-style:italic;margin:0 0 5px;">Monstera deliciosa</p>
+                <div style="display:flex;gap:4px;align-items:center;">
+                  <span style="font-size:8px;font-weight:600;color:#7D3C00;background:#FFF8F0;border:1px solid #FFD8A8;border-radius:50px;padding:2px 6px;">💧 Water now</span>
+                  <span style="font-size:8px;font-weight:700;color:#2E7D32;background:#E8F5E9;border:1px solid #C8E6C9;border-radius:50px;padding:2px 6px;">● Healthy</span>
+                </div>
+              </div>
+            </div>
+            <div style="background:#fff;border:1px solid #E0E8E0;border-radius:14px;padding:10px;display:flex;gap:8px;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+              <div style="width:46px;height:46px;border-radius:10px;background:#E3F2FD;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <span style="font-size:18px;font-weight:800;color:#2E7D32;">F</span>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <p style="font-size:11px;font-weight:700;color:#191D19;margin:0 0 1px;">Fiddle</p>
+                <p style="font-size:8px;color:#8B9E8B;font-style:italic;margin:0 0 5px;">Ficus lyrata</p>
+                <div style="display:flex;gap:4px;align-items:center;">
+                  <span style="font-size:8px;font-weight:600;color:#2E7D32;background:#E8F5E9;border:1px solid #C8E6C9;border-radius:50px;padding:2px 6px;">💧 in 2d</span>
+                  <span style="font-size:8px;font-weight:700;color:#7D3C00;background:#FFF8F0;border:1px solid #FFD8A8;border-radius:50px;padding:2px 6px;">● Mild stress</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="phone-label">Dashboard</p>
+    </div>
+
+    <div>
+      <div class="phone">
+        <div class="phone-screen" style="background:#F6FAF6;padding:16px;">
+          <p style="font-size:10px;color:#8B9E8B;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Tips for Your Garden</p>
+          <p style="font-size:9px;color:#8B9E8B;margin:0 0 14px;">8 tips · swipe to dismiss</p>
+          <!-- Three stacked cards visible -->
+          <div style="position:relative;height:160px;margin-bottom:16px;">
+            <div style="position:absolute;inset:0;background:#FFF0F5;border:1.5px solid #FFB3D1;border-radius:20px;transform:scale(0.90) translateY(16px);z-index:1;"></div>
+            <div style="position:absolute;inset:0;background:#FFF8E1;border:1.5px solid #FFE082;border-radius:20px;transform:scale(0.95) translateY(8px);z-index:2;"></div>
+            <div style="position:absolute;inset:0;background:#E8F5E9;border:1.5px solid #C8E6C9;border-radius:20px;z-index:3;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,0.08);">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <span style="font-size:8px;font-weight:800;color:#2E7D32;text-transform:uppercase;letter-spacing:0.7px;background:rgba(255,255,255,0.6);padding:3px 7px;border-radius:6px;">🤝 Companions</span>
+                <span style="font-size:18px;">🌿</span>
+              </div>
+              <p style="font-size:12px;font-weight:800;color:#191D19;margin:0 0 8px;line-height:1.3;letter-spacing:-0.3px;">Pothos + Snake Plant</p>
+              <p style="font-size:10px;color:#4A5E4A;line-height:1.6;margin:0 0 10px;">Both are low-light plants — group them in one spot. One check covers both.</p>
+              <div style="display:flex;gap:5px;">
+                <span style="font-size:9px;font-weight:700;color:#2E7D32;background:rgba(255,255,255,0.7);border:1px solid #C8E6C9;border-radius:50px;padding:2px 8px;">Pothos</span>
+                <span style="font-size:9px;font-weight:700;color:#2E7D32;background:rgba(255,255,255,0.7);border:1px solid #C8E6C9;border-radius:50px;padding:2px 8px;">Snake Plant</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:center;gap:5px;margin-bottom:16px;">
+            <div style="width:16px;height:5px;border-radius:2.5px;background:#2E7D32;"></div>
+            <div style="width:5px;height:5px;border-radius:2.5px;background:#E0E8E0;"></div>
+            <div style="width:5px;height:5px;border-radius:2.5px;background:#E0E8E0;"></div>
+            <div style="width:5px;height:5px;border-radius:2.5px;background:#E0E8E0;"></div>
+            <div style="width:5px;height:5px;border-radius:2.5px;background:#E0E8E0;"></div>
+          </div>
+          <p style="font-size:9px;color:#8B9E8B;text-align:center;font-weight:500;">← swipe to dismiss →</p>
+        </div>
+      </div>
+      <p class="phone-label">Stacked Tips</p>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Live app:</strong> <a href="https://plant-vision-three.vercel.app" target="_blank">plant-vision-three.vercel.app</a> — sign in with Google or email OTP to see your own personalised dashboard.
+  </div>
+</section>
+
+<!-- ── Design Decisions ───────────────────────────────────────────────── -->
+<section class="section">
+  <p class="label">Design Decisions</p>
+  <h2>Key choices &amp; trade-offs</h2>
+
+  <div class="decision-list">
+    <div class="decision">
+      <div class="decision-num">1</div>
+      <div class="decision-body">
+        <h3>Stacked card deck instead of horizontal carousel</h3>
+        <p>Horizontal scroll carousels hide content depth — users don't know how many tips exist. A stacked deck communicates "there's more below" visually and makes the interaction tactile (swipe to dismiss, like Tinder). The most relevant personalized tip is always on top. Progress dots show position without needing a scroll indicator.</p>
+      </div>
+    </div>
+    <div class="decision">
+      <div class="decision-num">2</div>
+      <div class="decision-body">
+        <h3>Framer Motion spring physics over CSS transitions</h3>
+        <p>CSS <code>transition</code> uses fixed easing curves. Spring physics (stiffness: 360, damping: 38) creates motion that responds to gesture velocity — a fast swipe produces a snappier exit, a slow drag produces a gentler one. This makes the interface feel alive rather than mechanical. Used for card stack, plant card stagger-in, stat count animations, and badge transitions.</p>
+      </div>
+    </div>
+    <div class="decision">
+      <div class="decision-num">3</div>
+      <div class="decision-body">
+        <h3>Three AI APIs instead of one</h3>
+        <p>PlantNet's botanical visual model is best-in-class for species ID but gives no care information. Gemini is excellent at visual health analysis but not fine-tuned for species. Groq (Llama 3) is extremely fast (100+ tok/s) for text synthesis. Chaining all three keeps latency under 2 seconds while maximising each model's strength.</p>
+      </div>
+    </div>
+    <div class="decision">
+      <div class="decision-num">4</div>
+      <div class="decision-body">
+        <h3>Passwordless-first auth</h3>
+        <p>Email OTP magic links + Google OAuth via Supabase PKCE flow. No passwords means no reset flows, no brute force risk, and faster sign-up for casual users who just want to scan a plant. The PKCE callback route at <code>/auth/callback</code> exchanges the auth code server-side for security.</p>
+      </div>
+    </div>
+    <div class="decision">
+      <div class="decision-num">5</div>
+      <div class="decision-body">
+        <h3>Inline styles with a shared token object instead of Tailwind classes</h3>
+        <p>The M3-aligned <code>T</code> token object (colors, shadows, border-radii) is the single source of truth. Changing <code>T.green</code> updates every use site instantly. No class name collisions, no purge configuration, and the token values are visible and refactorable in code rather than scattered across className strings. Trade-off: no Tailwind's responsive utilities — but this is a mobile-first app with a fixed max-width, so that matters less.</p>
+      </div>
+    </div>
+    <div class="decision">
+      <div class="decision-num">6</div>
+      <div class="decision-body">
+        <h3>Personalised permaculture tips computed at render time</h3>
+        <p><code>getPersonalizedTips(plants)</code> runs in the browser via <code>useMemo</code> — no server round trip. It matches the user's actual plant names against companion planting data, pairs plants sharing light levels, identifies drought-tolerant plants for batch-watering tips, and falls back to general permaculture principles. The "most relevant first" ordering naturally places user-specific tips before generic ones.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Tech Stack ─────────────────────────────────────────────────────── -->
+<section class="section">
+  <p class="label">Stack</p>
+  <h2>Technology choices</h2>
+
+  <div class="stack-grid">
+    <div class="stack-item">
+      <div class="stack-icon">▲</div>
+      <div>
+        <div class="stack-name">Next.js 16</div>
+        <div class="stack-role">App Router, server routes, PWA</div>
+      </div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-icon">⚡</div>
+      <div>
+        <div class="stack-name">Supabase</div>
+        <div class="stack-role">Postgres, Auth, Row-level security</div>
+      </div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-icon">🌿</div>
+      <div>
+        <div class="stack-name">PlantNet API</div>
+        <div class="stack-role">Species identification (Top-3)</div>
+      </div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-icon">✨</div>
+      <div>
+        <div class="stack-name">Google Gemini</div>
+        <div class="stack-role">Vision — health + stress analysis</div>
+      </div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-icon">⚡</div>
+      <div>
+        <div class="stack-name">Groq (Llama 3)</div>
+        <div class="stack-role">Care plan synthesis, 100+ tok/s</div>
+      </div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-icon">🎞</div>
+      <div>
+        <div class="stack-name">Framer Motion 12</div>
+        <div class="stack-role">Spring physics, AnimatePresence</div>
+      </div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-icon">🎨</div>
+      <div>
+        <div class="stack-name">Material 3 tokens</div>
+        <div class="stack-role">Design system, shape + colour</div>
+      </div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-icon">📦</div>
+      <div>
+        <div class="stack-name">Vercel</div>
+        <div class="stack-role">Hosting, edge functions, CI/CD</div>
+      </div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-icon">🔑</div>
+      <div>
+        <div class="stack-name">Google OAuth (PKCE)</div>
+        <div class="stack-role">Social sign-in, no passwords</div>
+      </div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-icon">📐</div>
+      <div>
+        <div class="stack-name">TypeScript</div>
+        <div class="stack-role">Full type safety end to end</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Code Highlight ─────────────────────────────────────────────────── -->
+<section class="section">
+  <p class="label">Implementation Detail</p>
+  <h2>Stacked card swipe pattern</h2>
+  <p>The tip deck uses <code>useMotionValue</code> + <code>useTransform</code> for live drag feedback and <code>AnimatePresence</code> for spring-based card transitions. Three cards are always in the DOM — only the top card is draggable.</p>
+
+<pre><span class="cm">// Each card tracks its own drag x-position</span>
+<span class="kw">const</span> x = <span class="fn">useMotionValue</span>(<span class="str">0</span>);
+<span class="kw">const</span> rotate = <span class="fn">useTransform</span>(x, [-200, 200], [-15, 15]);
+<span class="kw">const</span> opacity = <span class="fn">useTransform</span>(x, [-160, -80, 0, 80, 160], [0, 1, 1, 1, 0]);
+
+<span class="cm">// Stack position via animate prop — springs to new value on index change</span>
+<span class="fn">animate</span>={{ scale: <span class="str">1 - stackIndex * 0.048</span>, y: <span class="str">stackIndex * 12</span>, opacity: <span class="str">1</span> }}
+
+<span class="cm">// Dismiss threshold: 80px offset → remove top card, next springs forward</span>
+<span class="fn">onDragEnd</span>={(_, info) => {
+  <span class="kw">if</span> (Math.<span class="fn">abs</span>(info.offset.x) > <span class="str">80</span>) <span class="fn">onDismiss</span>();
+}}
+
+<span class="cm">// Exit: card flies off-screen with rotation</span>
+<span class="fn">exit</span>={{ x: <span class="str">380</span>, rotate: <span class="str">24</span>, opacity: <span class="str">0</span>, transition: { duration: <span class="str">0.28</span> } }}
+</pre>
+
+  <p style="margin-top: 16px;">The animated progress dots are a single <code>motion.div</code> with an <code>animate={{ width }}</code> that expands the active dot to 20px. React state drives which index is active — no separate dot component needed.</p>
+</section>
+
+<!-- ── Reflections ────────────────────────────────────────────────────── -->
+<section class="section">
+  <p class="label">Reflection</p>
+  <h2>What I learned</h2>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <span class="feature-icon">🔗</span>
+      <h3>AI pipeline orchestration</h3>
+      <p style="font-size: 14px;">Chaining three AI APIs with different response shapes requires defensive parsing at each stage. PlantNet confidence scores gate whether Gemini runs; Gemini's output shapes the Groq prompt.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🔐</span>
+      <h3>OAuth PKCE complexity</h3>
+      <p style="font-size: 14px;">Google OAuth with Supabase's SSR package requires a dedicated server-side callback route for the code exchange. The redirect allowlist in Supabase must exactly match the production URL — a common misconfiguration.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🎞</span>
+      <h3>Framer Motion + React 19</h3>
+      <p style="font-size: 14px;">Framer Motion 12 works cleanly with React 19's concurrent renderer. The key: never mix <code>animate</code> targets with <code>style</code> MotionValues for the same property on the same element.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🌱</span>
+      <h3>Permaculture as UX metaphor</h3>
+      <p style="font-size: 14px;">Mapping permaculture's 12 principles to houseplant care advice was a creative constraint that forced unusually specific and memorable tips — much more engaging than generic "water when topsoil is dry" copy.</p>
+    </div>
+  </div>
+</section>
+</div>
+
+<!-- ── Footer ─────────────────────────────────────────────────────────── -->
+<footer class="footer">
+  <p class="footer-title">Plant Care</p>
+  <p>Built by <strong>Sagar</strong> · 2025 · <a href="https://plant-vision-three.vercel.app">plant-vision-three.vercel.app</a></p>
+  <p style="margin-top: 8px; font-size: 12px;">Next.js · Supabase · PlantNet · Gemini · Groq · Framer Motion · Vercel</p>
+</footer>
+
+</body>
+</html>
