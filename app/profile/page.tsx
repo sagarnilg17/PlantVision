@@ -11,7 +11,7 @@ import { T } from '@/lib/theme';
 
 const SPRING = { type: 'spring' as const, stiffness: 340, damping: 36 };
 
-const FEATURE_REQUEST_EMAIL = 'sagarnil.gx@gmail.com';
+const FEATURE_REQUEST_EMAIL = 'sagarnil.g17x@gmail.com';
 
 function buildFeatureRequestHref(userEmail: string | null) {
   const subject = 'Plant Care — Feature Request';
