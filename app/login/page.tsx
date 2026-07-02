@@ -3,90 +3,221 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { T } from '@/lib/theme';
+
+function PlantMark() {
+  return (
+    <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+      {/* outer glow ring */}
+      <circle cx="32" cy="32" r="30" fill="rgba(255,255,255,0.10)" />
+      {/* leaf body */}
+      <path d="M32 10 C32 10, 16 24, 16 38 C16 47.3 23.2 54 32 54 C40.8 54 48 47.3 48 38 C48 24 32 10 32 10Z" fill="rgba(255,255,255,0.92)" />
+      {/* stem */}
+      <line x1="32" y1="22" x2="32" y2="54" stroke="rgba(27,94,32,0.5)" strokeWidth="1.5" strokeLinecap="round" />
+      {/* left vein */}
+      <path d="M32 31 C32 31, 24 27, 22 33" stroke="rgba(27,94,32,0.4)" strokeWidth="1" strokeLinecap="round" fill="none" />
+      {/* right vein */}
+      <path d="M32 39 C32 39, 40 35, 42 41" stroke="rgba(27,94,32,0.4)" strokeWidth="1" strokeLinecap="round" fill="none" />
+    </svg>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
-  const [step, setStep] = useState<'email' | 'otp'>('email');
+  const [email,   setEmail]   = useState('');
+  const [otp,     setOtp]     = useState('');
+  const [step,    setStep]    = useState<'email' | 'otp'>('email');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error,   setError]   = useState<string | null>(null);
+
+  const signInWithGoogle = async () => {
+    setLoading(true); setError(null);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    if (error) { setError(error.message); setLoading(false); }
+    // on success the browser navigates away — no setLoading(false) needed
+  };
 
   const sendOtp = async () => {
     setLoading(true); setError(null);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: { shouldCreateUser: true },
-      });
+      const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } });
       setLoading(false);
       if (error) { setError(error.message || 'Auth error'); return; }
       setStep('otp');
     } catch (e: unknown) {
       setLoading(false);
-      setError(e instanceof Error ? e.message : 'Could not reach Supabase — check your env keys in Vercel.');
+      setError(e instanceof Error ? e.message : 'Could not reach server — check your connection.');
     }
   };
 
   const verifyOtp = async () => {
     setLoading(true); setError(null);
-    const { error } = await supabase.auth.verifyOtp({
-      email: email.trim(), token: otp, type: 'email',
-    });
+    const { error } = await supabase.auth.verifyOtp({ email: email.trim(), token: otp, type: 'email' });
     setLoading(false);
     if (error) { setError(error.message); return; }
     router.push('/');
   };
 
-  const input: React.CSSProperties = {
-    width: '100%', boxSizing: 'border-box', padding: '14px 16px',
-    fontSize: 16, borderRadius: 12, border: '1px solid #D5E5D5',
-    background: '#FFFFFF', color: '#1A2E1A', outline: 'none', marginBottom: 12,
-  };
-  const btn: React.CSSProperties = {
-    width: '100%', padding: 14, fontSize: 16, fontWeight: 600,
-    background: '#2E7D32', color: '#FFFFFF', border: 'none',
-    borderRadius: 12, cursor: 'pointer',
-  };
+  const canSubmitEmail = email.includes('@') && !loading;
+  const canSubmitOtp   = otp.length === 6 && !loading;
 
   return (
-    <main style={{ minHeight: '100vh', background: '#F7FBF7', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div style={{ width: '100%', maxWidth: 380 }}>
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{ fontSize: 48 }}>🌿</div>
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: '#1A2E1A', margin: '8px 0 4px' }}>Plant Care</h1>
-          <p style={{ fontSize: 14, color: '#5A6B5A', margin: 0 }}>
-            {step === 'email' ? 'Sign in with your email' : `Enter the code sent to ${email}`}
+    <main style={{ minHeight: '100vh', background: T.bg, display: 'flex', flexDirection: 'column' }}>
+
+      {/* Hero */}
+      <div style={{
+        background: `linear-gradient(155deg, #2E7D32 0%, #1B5E20 60%, #14461A 100%)`,
+        minHeight: 280,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end',
+        padding: '56px 24px 52px',
+        position: 'relative', overflow: 'hidden',
+        flexShrink: 0,
+      }}>
+        {/* decorative rings */}
+        <div style={{ position: 'absolute', top: -80, right: -80, width: 260, height: 260, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.07)' }} />
+        <div style={{ position: 'absolute', top: -40, right: -40, width: 160, height: 160, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.07)' }} />
+        <div style={{ position: 'absolute', bottom: -60, left: -60, width: 200, height: 200, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.06)' }} />
+        {/* subtle leaf pattern dots */}
+        <div style={{ position: 'absolute', top: 32, left: 24, opacity: 0.15 }}>
+          {[0,1,2].map(i => <div key={i} style={{ width: 4, height: 4, borderRadius: '50%', background: '#fff', margin: '0 0 14px' }} />)}
+        </div>
+        <div style={{ position: 'absolute', top: 56, left: 42, opacity: 0.10 }}>
+          {[0,1].map(i => <div key={i} style={{ width: 3, height: 3, borderRadius: '50%', background: '#fff', margin: '0 0 12px' }} />)}
+        </div>
+
+        <div style={{ position: 'relative', textAlign: 'center' }}>
+          <div style={{ marginBottom: 16 }}><PlantMark /></div>
+          <h1 style={{ fontSize: 30, fontWeight: 700, color: '#fff', margin: '0 0 8px', letterSpacing: -0.5 }}>Plant Care</h1>
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.68)', margin: 0, lineHeight: 1.5 }}>
+            {step === 'email' ? 'Identify, track and care for your plants' : `Check ${email}`}
           </p>
         </div>
+      </div>
+
+      {/* Form sheet */}
+      <div style={{
+        flex: 1,
+        background: T.surface,
+        borderRadius: '24px 24px 0 0',
+        marginTop: -22,
+        padding: '32px 24px 40px',
+        display: 'flex', flexDirection: 'column',
+        boxShadow: '0 -6px 24px rgba(0,0,0,0.07)',
+      }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: T.text, margin: '0 0 6px' }}>
+          {step === 'email' ? 'Sign in' : 'Enter your code'}
+        </h2>
+        <p style={{ fontSize: 14, color: T.sub, margin: '0 0 28px', lineHeight: 1.5 }}>
+          {step === 'email'
+            ? "We'll send a one-time code — no password needed."
+            : `Sent to ${email}`}
+        </p>
 
         {step === 'email' ? (
           <>
-            <input style={input} type="email" placeholder="you@example.com"
-              value={email} onChange={e => setEmail(e.target.value)} />
-            <button style={{ ...btn, opacity: loading ? 0.6 : 1 }} onClick={sendOtp} disabled={loading || !email}>
-              {loading ? 'Sending…' : 'Send Code'}
+            {/* Google sign-in */}
+            <button onClick={signInWithGoogle} disabled={loading}
+              style={{
+                width: '100%', padding: '13px 16px', fontSize: 15, fontWeight: 600,
+                background: '#fff', color: '#3c4043',
+                border: `1.5px solid #dadce0`, borderRadius: T.rSm,
+                cursor: loading ? 'default' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                marginBottom: 20,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                transition: 'box-shadow 0.15s',
+              }}>
+              {/* Google "G" logo */}
+              <svg width="18" height="18" viewBox="0 0 48 48">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                <path fill="none" d="M0 0h48v48H0z"/>
+              </svg>
+              Continue with Google
+            </button>
+
+            {/* Divider */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <div style={{ flex: 1, height: 1, background: T.border }} />
+              <span style={{ fontSize: 12, color: T.muted }}>or use email</span>
+              <div style={{ flex: 1, height: 1, background: T.border }} />
+            </div>
+
+            <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6, display: 'block' }}>
+              Email address
+            </label>
+            <input
+              type="email" placeholder="you@example.com" autoFocus
+              value={email} onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && canSubmitEmail && sendOtp()}
+              style={{
+                width: '100%', padding: '14px 16px', fontSize: 16,
+                borderRadius: T.rSm, border: `1.5px solid ${T.border}`,
+                background: T.bg, color: T.text, outline: 'none',
+                marginBottom: 16, display: 'block',
+              }}
+            />
+            <button onClick={sendOtp} disabled={!canSubmitEmail}
+              style={{
+                width: '100%', padding: 15, fontSize: 15, fontWeight: 600,
+                background: canSubmitEmail ? T.green : T.greenLight,
+                color: canSubmitEmail ? '#fff' : T.muted,
+                border: 'none', borderRadius: T.rSm,
+                cursor: canSubmitEmail ? 'pointer' : 'default',
+                transition: 'background 0.2s, color 0.2s',
+              }}>
+              {loading ? 'Sending…' : 'Continue with email'}
             </button>
           </>
         ) : (
           <>
-            <input style={input} type="text" inputMode="numeric" placeholder="6-digit code"
-              value={otp} onChange={e => setOtp(e.target.value)} maxLength={6} />
-            <button style={{ ...btn, opacity: loading ? 0.6 : 1 }} onClick={verifyOtp} disabled={loading || otp.length < 6}>
-              {loading ? 'Verifying…' : 'Verify & Sign In'}
+            <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6, display: 'block' }}>
+              6-digit code
+            </label>
+            <input
+              type="text" inputMode="numeric" placeholder="000000" autoFocus
+              value={otp} onChange={e => setOtp(e.target.value)} maxLength={6}
+              onKeyDown={e => e.key === 'Enter' && canSubmitOtp && verifyOtp()}
+              style={{
+                width: '100%', padding: '14px 16px', fontSize: 24, letterSpacing: 10,
+                borderRadius: T.rSm, border: `1.5px solid ${T.border}`,
+                background: T.bg, color: T.text, outline: 'none',
+                marginBottom: 16, display: 'block', textAlign: 'center',
+              }}
+            />
+            <button onClick={verifyOtp} disabled={!canSubmitOtp}
+              style={{
+                width: '100%', padding: 15, fontSize: 15, fontWeight: 600,
+                background: canSubmitOtp ? T.green : T.greenLight,
+                color: canSubmitOtp ? '#fff' : T.muted,
+                border: 'none', borderRadius: T.rSm,
+                cursor: canSubmitOtp ? 'pointer' : 'default',
+                marginBottom: 8,
+                transition: 'background 0.2s, color 0.2s',
+              }}>
+              {loading ? 'Verifying…' : 'Sign In'}
             </button>
-            <button onClick={() => { setStep('email'); setOtp(''); }}
-              style={{ width: '100%', padding: 12, marginTop: 8, background: 'none', border: 'none', color: '#2E7D32', fontSize: 14, cursor: 'pointer' }}>
-              ← Change email
+            <button onClick={() => { setStep('email'); setOtp(''); setError(null); }}
+              style={{ width: '100%', padding: 12, background: 'none', border: 'none', color: T.sub, fontSize: 14, cursor: 'pointer' }}>
+              ← Use a different email
             </button>
           </>
         )}
 
         {error && (
-          <p style={{ marginTop: 12, padding: 10, background: '#FDEDED', border: '1px solid #F5B5B5', borderRadius: 8, color: '#C0392B', fontSize: 13 }}>
+          <div style={{ marginTop: 14, padding: '12px 14px', background: T.dangerLight, border: `1px solid ${T.dangerBorder}`, borderRadius: T.rSm, color: T.danger, fontSize: 14 }}>
             {error}
-          </p>
+          </div>
         )}
+
+        <p style={{ fontSize: 12, color: T.muted, textAlign: 'center', marginTop: 'auto', paddingTop: 36 }}>
+          No password · Secure magic link sign-in
+        </p>
       </div>
     </main>
   );

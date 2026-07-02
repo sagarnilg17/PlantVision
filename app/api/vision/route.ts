@@ -3,62 +3,103 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY ?? '' });
 
-// Symptom-only prompt. Explicitly forbids species ID and single verdicts.
-const DIAG_PROMPT = `You are a plant pathology assistant. You are NOT identifying the species — that is already known. Examine ONLY visible stress and disease symptoms (leaf colour, spots, wilting, pests, soil surface, stem condition).
-
-Return ONLY valid JSON, no extra text, in this exact shape:
+const CARE_PROMPT = `You are a houseplant care expert. Given a species, return ONLY valid JSON — no extra text:
 
 {
-  "overallHealth": "healthy | mild stress | needs attention | urgent",
-  "observations": ["short visual fact you actually see", "..."],
-  "differentials": [
-    {
-      "cause": "e.g. Overwatering",
-      "likelihood": "high | medium | low",
-      "evidence": "what in the image suggests this",
-      "missingEvidence": "what you cannot tell from a photo alone"
-    }
-  ],
-  "clarifyingQuestions": [
-    { "id": "q1", "question": "Yes/No question that would narrow the diagnosis", "ifYes": "cause this points to", "ifNo": "cause this points to" }
-  ]
+  "wateringFrequency": "Every X-Y days",
+  "wateringTips": "One concise watering tip",
+  "potSize": "e.g. 6-inch pot",
+  "potSizeReason": "One sentence why",
+  "careTips": ["tip 1", "tip 2", "tip 3"],
+  "toxicToAnimals": true,
+  "toxicToHumans": false,
+  "toxicityNotes": "One sentence: which animals/people it is toxic to and the effect, or 'Non-toxic to pets and humans.'"
 }
 
-Rules:
-- Give 2-3 differentials ranked by likelihood. NEVER give a single confident verdict.
-- Use hedged language ("possible", "consistent with").
-- Always populate missingEvidence — be honest about photo limitations (roots, soil moisture, smell are invisible).
-- Give 2-3 clarifyingQuestions that a non-expert can answer.`;
+Use "Every X days" or "Every X-Y days" format for wateringFrequency. Be concise and practical.`;
 
 export async function POST(req: NextRequest) {
   try {
-    const { images, speciesName } = await req.json();
+    const { images, organs } = await req.json();
     if (!Array.isArray(images) || images.length === 0) {
       return NextResponse.json({ error: 'No images provided' }, { status: 400 });
     }
 
-    const content: Array<Record<string, unknown>> = images.slice(0, 3).map((img: string) => {
+    // 1. Build multipart body manually so each image part carries the correct
+    //    Content-Type header — Node.js's FormData/File globals don't reliably
+    //    include per-part MIME types when serialised by undici's fetch.
+    const boundary = `PlantNetBoundary${Date.now().toString(16)}`;
+    const parts: Buffer[] = [];
+
+    images.slice(0, 3).forEach((img: string, i: number) => {
       const [header, b64] = img.split(',');
       const mediaType = header.match(/data:(.*);/)?.[1] ?? 'image/jpeg';
-      return { type: 'image_url', image_url: { url: `data:${mediaType};base64,${b64}` } };
-    });
-    content.push({
-      type: 'text',
-      text: `${DIAG_PROMPT}\n\nKnown species: ${speciesName ?? 'unknown'}. Focus on health symptoms only.`,
+      const ext = mediaType === 'image/png' ? 'png' : 'jpg';
+      const imageBuffer = Buffer.from(b64, 'base64');
+
+      parts.push(Buffer.from(
+        `--${boundary}\r\nContent-Disposition: form-data; name="images"; filename="image${i}.${ext}"\r\nContent-Type: ${mediaType}\r\n\r\n`
+      ));
+      parts.push(imageBuffer);
+      parts.push(Buffer.from('\r\n'));
+
+      parts.push(Buffer.from(
+        `--${boundary}\r\nContent-Disposition: form-data; name="organs"\r\n\r\n${organs?.[i] ?? 'leaf'}\r\n`
+      ));
     });
 
-    const response = await groq.chat.completions.create({
+    parts.push(Buffer.from(`--${boundary}--\r\n`));
+    const multipartBody = Buffer.concat(parts);
+
+    const pnRes = await fetch(
+      `https://my-api.plantnet.org/v2/identify/all?api-key=${process.env.PLANTNET_API_KEY}&include-related-images=false&no-reject=false&lang=en`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+        body: multipartBody,
+      }
+    );
+    if (!pnRes.ok) {
+      const text = await pnRes.text();
+      throw new Error(`PlantNet ${pnRes.status}: ${text}`);
+    }
+
+    const pnData = await pnRes.json();
+    const results: Array<Record<string, unknown>> = pnData.results ?? [];
+    if (results.length === 0) throw new Error('PlantNet could not identify the plant');
+
+    // 2. Build top-3 candidates from PlantNet results
+    type PNSpecies = { scientificNameWithoutAuthor?: string; scientificName?: string; commonNames?: string[]; genus?: { scientificNameWithoutAuthor?: string }; family?: { scientificNameWithoutAuthor?: string } };
+    const candidates = results.slice(0, 3).map((r) => {
+      const sp = (r.species ?? {}) as PNSpecies;
+      return {
+        scientificName: sp.scientificNameWithoutAuthor ?? sp.scientificName ?? 'Unknown',
+        commonName: sp.commonNames?.[0] ?? sp.scientificNameWithoutAuthor ?? 'Unknown',
+        genus: sp.genus?.scientificNameWithoutAuthor ?? '',
+        family: sp.family?.scientificNameWithoutAuthor ?? '',
+        score: (r.score as number) ?? 0,
+      };
+    });
+    const topMatch = candidates[0];
+
+    // 3. Ask Groq for care info based on the identified species
+    const careRes = await groq.chat.completions.create({
       model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-      messages: [{ role: 'user', content: content as never }],
-      max_tokens: 900,
+      messages: [
+        {
+          role: 'user',
+          content: `${CARE_PROMPT}\n\nPlant: ${topMatch.commonName} (${topMatch.scientificName})`,
+        },
+      ],
+      max_tokens: 500,
     });
 
-    const raw = response.choices[0]?.message?.content ?? '';
-    const m = raw.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error('Could not parse diagnosis');
-    const diagnosis = JSON.parse(m[0]);
+    const careRaw = careRes.choices[0]?.message?.content ?? '';
+    const careMatch = careRaw.match(/\{[\s\S]*\}/);
+    if (!careMatch) throw new Error('Could not parse care data');
+    const care = JSON.parse(careMatch[0]);
 
-    return NextResponse.json({ diagnosis });
+    return NextResponse.json({ candidates, topMatch, care });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json({ error: message }, { status: 500 });

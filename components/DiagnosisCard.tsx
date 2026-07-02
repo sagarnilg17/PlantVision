@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { T } from '@/lib/theme';
 
 export type Differential = {
   cause: string;
@@ -16,97 +17,145 @@ export type Diagnosis = {
   clarifyingQuestions: ClarifyingQ[];
 };
 
-const C = {
-  surface: '#FFFFFF', border: '#D5E5D5', green: '#2E7D32', greenLight: '#E3F2E3',
-  text: '#1A2E1A', sub: '#5A6B5A', danger: '#C0392B', warn: '#E67E22',
-};
+const healthMeta = (h: string) =>
+  h === 'healthy'
+    ? { color: T.green,   bg: T.greenLight,  border: T.greenMid,   label: 'Healthy' }
+    : h === 'mild stress'
+    ? { color: T.warn,    bg: T.warnLight,   border: T.amberBorder, label: 'Mild stress' }
+    : { color: T.danger,  bg: T.dangerLight, border: T.dangerBorder, label: 'Needs attention' };
 
-const healthColor = (h: string) =>
-  h === 'healthy' ? C.green : h === 'mild stress' ? C.warn : C.danger;
-const likColor = (l: string) =>
-  l === 'high' ? C.danger : l === 'medium' ? C.warn : C.sub;
+const likMeta = (l: string) =>
+  l === 'high'   ? { color: T.danger, label: 'High' }
+  : l === 'medium' ? { color: T.warn,   label: 'Med' }
+  : { color: T.muted, label: 'Low' };
 
 export function DiagnosisCard({ diagnosis }: { diagnosis: Diagnosis }) {
   const [answers, setAnswers] = useState<Record<string, 'yes' | 'no'>>({});
 
-  // narrow: tally which causes the user's answers point toward
   const leaning: Record<string, number> = {};
   diagnosis.clarifyingQuestions.forEach(q => {
     const a = answers[q.id];
     if (a === 'yes') leaning[q.ifYes] = (leaning[q.ifYes] ?? 0) + 1;
-    if (a === 'no') leaning[q.ifNo] = (leaning[q.ifNo] ?? 0) + 1;
+    if (a === 'no')  leaning[q.ifNo]  = (leaning[q.ifNo]  ?? 0) + 1;
   });
   const topLeaning = Object.entries(leaning).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const answered   = Object.keys(answers).length;
+  const total      = diagnosis.clarifyingQuestions?.length ?? 0;
+
+  const hm = healthMeta(diagnosis.overallHealth);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {/* overall */}
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 13, color: C.sub, textTransform: 'uppercase', letterSpacing: 0.8 }}>Health check</span>
-          <span style={{ background: healthColor(diagnosis.overallHealth) + '22', color: healthColor(diagnosis.overallHealth), border: `1px solid ${healthColor(diagnosis.overallHealth)}55`, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 600, textTransform: 'capitalize' }}>{diagnosis.overallHealth}</span>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+      {/* Overall health */}
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.r, padding: 16, boxShadow: T.shadow }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: diagnosis.observations?.length ? 12 : 0 }}>
+          <span style={{ fontSize: 11, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>Health check</span>
+          <span style={{
+            background: hm.bg, color: hm.color, border: `1px solid ${hm.border}`,
+            borderRadius: T.rPill, padding: '3px 12px', fontSize: 11, fontWeight: 700,
+            textTransform: 'capitalize',
+          }}>
+            {hm.label}
+          </span>
         </div>
         {diagnosis.observations?.length > 0 && (
-          <div style={{ marginTop: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {diagnosis.observations.map((o, i) => (
-              <p key={i} style={{ margin: '2px 0', fontSize: 13, color: C.text }}>👁️ {o}</p>
+              <p key={i} style={{ margin: 0, fontSize: 13, color: T.text, lineHeight: 1.5 }}>• {o}</p>
             ))}
           </div>
         )}
       </div>
 
-      {/* differentials */}
-      <div>
-        <p style={{ fontSize: 13, color: C.sub, textTransform: 'uppercase', letterSpacing: 0.8, margin: '0 0 8px' }}>Possible causes</p>
+      {/* Differentials */}
+      {diagnosis.differentials.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <p style={{ fontSize: 11, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, margin: 0, fontWeight: 700 }}>Possible causes</p>
           {diagnosis.differentials.map((d, i) => {
-            const isLeaning = topLeaning && d.cause.toLowerCase().includes(topLeaning.toLowerCase());
+            const isLeaning = !!(topLeaning && d.cause.toLowerCase().includes(topLeaning.toLowerCase()));
+            const lm = likMeta(d.likelihood);
             return (
-              <div key={i} style={{ background: C.surface, border: `2px solid ${isLeaning ? C.green : C.border}`, borderRadius: 12, padding: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: C.text }}>
-                    {isLeaning && '➡️ '}Possible: {d.cause}
-                  </span>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: likColor(d.likelihood), textTransform: 'uppercase' }}>{d.likelihood}</span>
+              <div key={i} style={{
+                background: isLeaning ? T.greenLight : T.surface,
+                border: `2px solid ${isLeaning ? T.green : T.border}`,
+                borderRadius: T.r, padding: 14, boxShadow: T.shadow,
+                transition: 'border-color 0.2s, background 0.2s',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: T.text, flex: 1, paddingRight: 8 }}>
+                    {isLeaning && '→ '}Possible: {d.cause}
+                  </p>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: lm.color, textTransform: 'uppercase', letterSpacing: 0.5, flexShrink: 0, marginTop: 2 }}>{lm.label}</span>
                 </div>
-                <p style={{ margin: '0 0 4px', fontSize: 13, color: C.text }}>🔍 {d.evidence}</p>
-                <p style={{ margin: 0, fontSize: 12, color: C.sub }}>❓ Can't tell from photo: {d.missingEvidence}</p>
+                <p style={{ margin: '0 0 6px', fontSize: 13, color: T.text }}>🔍 {d.evidence}</p>
+                <p style={{ margin: 0, fontSize: 12, color: T.muted }}>Can't tell from photo: {d.missingEvidence}</p>
               </div>
             );
           })}
         </div>
-      </div>
+      )}
 
-      {/* clarifying question flow */}
-      {diagnosis.clarifyingQuestions?.length > 0 && (
-        <div style={{ background: C.greenLight, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14 }}>
-          <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 600, color: C.text }}>Answer to narrow it down:</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {diagnosis.clarifyingQuestions.map(q => (
-              <div key={q.id}>
-                <p style={{ margin: '0 0 6px', fontSize: 13, color: C.text }}>{q.question}</p>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {(['yes', 'no'] as const).map(opt => (
-                    <button key={opt} onClick={() => setAnswers(a => ({ ...a, [q.id]: opt }))}
-                      style={{ flex: 1, padding: '8px', borderRadius: 8, border: `2px solid ${answers[q.id] === opt ? C.green : C.border}`, background: answers[q.id] === opt ? C.surface : 'transparent', color: C.text, fontSize: 13, fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize' }}>
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
+      {/* Clarifying questions */}
+      {total > 0 && (
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.r, padding: 16, boxShadow: T.shadow }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.text }}>Narrow it down</p>
+            <span style={{ fontSize: 11, color: T.muted }}>{answered}/{total} answered</span>
           </div>
-          {topLeaning && (
-            <p style={{ margin: '12px 0 0', fontSize: 13, color: C.green, fontWeight: 600 }}>
-              ➡️ Your answers point toward: {topLeaning}
-            </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {diagnosis.clarifyingQuestions.map((q, qi) => {
+              const ans = answers[q.id];
+              return (
+                <div key={q.id}>
+                  <p style={{ margin: '0 0 8px', fontSize: 13, color: T.text, lineHeight: 1.55, fontWeight: ans ? 600 : 400 }}>
+                    {qi + 1}. {q.question}
+                  </p>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => setAnswers(a => ({ ...a, [q.id]: 'yes' }))} style={{
+                      flex: 1, padding: '9px 0', borderRadius: T.rSm, cursor: 'pointer',
+                      border: `2px solid ${ans === 'yes' ? T.green : T.border}`,
+                      background: ans === 'yes' ? T.greenLight : 'transparent',
+                      color: ans === 'yes' ? T.green : T.sub,
+                      fontSize: 13, fontWeight: 700, transition: 'all 0.15s',
+                    }}>
+                      {ans === 'yes' ? '✓ ' : ''}Yes
+                    </button>
+                    <button onClick={() => setAnswers(a => ({ ...a, [q.id]: 'no' }))} style={{
+                      flex: 1, padding: '9px 0', borderRadius: T.rSm, cursor: 'pointer',
+                      border: `2px solid ${ans === 'no' ? T.borderMid : T.border}`,
+                      background: ans === 'no' ? T.bg : 'transparent',
+                      color: ans === 'no' ? T.text : T.sub,
+                      fontSize: 13, fontWeight: 700, transition: 'all 0.15s',
+                    }}>
+                      {ans === 'no' ? '✕ ' : ''}No
+                    </button>
+                  </div>
+                  {ans === 'yes' && (
+                    <p style={{ margin: '6px 0 0', fontSize: 12, color: T.green }}>→ suggests {q.ifYes}</p>
+                  )}
+                  {ans === 'no' && (
+                    <p style={{ margin: '6px 0 0', fontSize: 12, color: T.sub }}>→ less likely: {q.ifNo}</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {topLeaning && answered > 0 && (
+            <div style={{ marginTop: 16, paddingTop: 14, borderTop: `1px solid ${T.greenMid}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: T.green, flexShrink: 0 }} />
+              <p style={{ margin: 0, fontSize: 13, color: T.green, fontWeight: 700 }}>
+                Most likely: {topLeaning}
+              </p>
+            </div>
           )}
         </div>
       )}
 
-      {/* honesty footer */}
-      <p style={{ fontSize: 11, color: C.sub, textAlign: 'center', margin: 0 }}>
-        This is first-pass guidance, not a diagnosis. Root and soil problems aren't visible in photos.
+      <p style={{ fontSize: 11, color: T.muted, textAlign: 'center', margin: 0, lineHeight: 1.5 }}>
+        First-pass guidance only · Root and soil problems aren't visible in photos
       </p>
     </div>
   );
