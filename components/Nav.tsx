@@ -22,15 +22,19 @@ function HomeIcon({ active }: { active: boolean }) {
   );
 }
 
-function CalendarIcon({ active }: { active: boolean }) {
+// Grid of 4 squares — represents "collection of plants"
+function GridIcon({ active }: { active: boolean }) {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       strokeWidth={active ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"
-        fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.12 : 0} />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
+      <rect x="3" y="3" width="7" height="7" rx="1.5"
+        fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.15 : 0} />
+      <rect x="14" y="3" width="7" height="7" rx="1.5"
+        fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.15 : 0} />
+      <rect x="3" y="14" width="7" height="7" rx="1.5"
+        fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.15 : 0} />
+      <rect x="14" y="14" width="7" height="7" rx="1.5"
+        fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.15 : 0} />
     </svg>
   );
 }
@@ -97,7 +101,14 @@ function TabButton({ label, active, onClick, children }: {
         {active && (
           <motion.div
             layoutId="nav-pill"
-            style={{ position: 'absolute', inset: 0, borderRadius: 14, background: T.greenLight }}
+            style={{
+              position: 'absolute', inset: 0, borderRadius: 14,
+              background: T.glassChromeBase,
+              backdropFilter: T.glassChromeBlur,
+              WebkitBackdropFilter: T.glassChromeBlur,
+              boxShadow: T.glassChromeSh,
+              border: T.glassChromeBd,
+            }}
             transition={SPRING_UI}
           />
         )}
@@ -137,7 +148,7 @@ export function Nav() {
         )}
       </AnimatePresence>
 
-      {/* ── M3 FAB speed dial ── */}
+      {/* ── FAB speed dial ── */}
       <div style={{
         position: 'fixed', right: 16, zIndex: 120,
         bottom: 'calc(env(safe-area-inset-bottom, 4px) + 76px)',
@@ -155,12 +166,15 @@ export function Nav() {
               whileTap={{ scale: 0.96 }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
-                background: T.surface, color: T.greenDark,
-                border: 'none', borderRadius: 16,
+                background: T.glassChromeBase, color: T.greenDark,
+                backdropFilter: T.glassChromeBlur,
+                WebkitBackdropFilter: T.glassChromeBlur,
+                border: T.glassChromeBd,
+                borderRadius: 16,
                 padding: '13px 18px',
                 fontSize: 13, fontWeight: 700,
                 cursor: 'pointer',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.16), 0 1px 4px rgba(0,0,0,0.08)',
+                boxShadow: T.glassPanelSh,
               }}>
               {a.icon}
               {a.label}
@@ -168,7 +182,7 @@ export function Nav() {
           ))}
         </AnimatePresence>
 
-        {/* Main FAB — M3 large shape (16px radius), rotates + to × when open */}
+        {/* Main FAB — rotates + to × when open */}
         <motion.button
           onClick={() => setFabOpen(o => !o)}
           whileTap={{ scale: 0.92 }}
@@ -188,22 +202,23 @@ export function Nav() {
         </motion.button>
       </div>
 
-      {/* ── Bottom navigation bar ── */}
+      {/* ── Bottom navigation bar — Liquid Glass chrome ── */}
       <nav style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
-        background: 'rgba(246,250,246,0.82)',
-        backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-        borderTop: '1px solid rgba(255,255,255,0.55)',
+        background: T.glassChromeBase,
+        backdropFilter: T.glassChromeBlur,
+        WebkitBackdropFilter: T.glassChromeBlur,
+        borderTop: T.glassChromeBd,
+        boxShadow: T.glassChromeSh,
         display: 'flex', alignItems: 'center',
         paddingBottom: 'env(safe-area-inset-bottom, 4px)',
       }}>
         <LayoutGroup>
-          <TabButton label="Garden" active={path === '/'} onClick={() => go('/')}>
-            <HomeIcon active={path === '/'} />
+          <TabButton label="Home"    active={path === '/'}        onClick={() => go('/')}>
+            <HomeIcon    active={path === '/'} />
           </TabButton>
-          <TabButton label="Schedule" active={path === '/schedule'} onClick={() => go('/schedule')}>
-            <CalendarIcon active={path === '/schedule'} />
+          <TabButton label="Plants"  active={path === '/plants'}  onClick={() => go('/plants')}>
+            <GridIcon    active={path === '/plants'} />
           </TabButton>
           <TabButton label="Profile" active={path === '/profile'} onClick={() => go('/profile')}>
             <ProfileIcon active={path === '/profile'} />

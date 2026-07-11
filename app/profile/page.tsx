@@ -9,42 +9,109 @@ import { supabase } from '@/lib/supabase';
 import { Nav } from '@/components/Nav';
 import { T } from '@/lib/theme';
 
-const SPRING = { type: 'spring' as const, stiffness: 340, damping: 36 };
+const SPRING_UI  = { type: 'spring' as const, bounce: 0, duration: 0.35 };
+const SPRING_TAP = { type: 'spring' as const, bounce: 0, duration: 0.18 };
 
-const FEATURE_REQUEST_EMAIL = 'sagarnil.g17x@gmail.com';
+const DEVELOPER_EMAIL = 'sagarnil.g17x@gmail.com';
 
-function buildFeatureRequestHref(userEmail: string | null) {
-  const subject = 'Plant Care — Feature Request';
+function buildEmailHref(subject: string, bodyLines: string[], userEmail: string | null) {
   const body = [
-    'Hi Sagar,',
-    '',
-    'I have a feature idea for Plant Care!',
-    '',
-    'What I want to do:',
-    '(describe the feature here)',
-    '',
-    'Why it would help me:',
-    '(what problem does it solve?)',
+    ...bodyLines,
     '',
     '—',
     `Sent from Plant Care${userEmail ? ` by ${userEmail}` : ''}`,
   ].join('\n');
-  return `mailto:${FEATURE_REQUEST_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  return `mailto:${DEVELOPER_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 function Spinner({ size = 20 }: { size?: number }) {
   return <div style={{ width: size, height: size, border: `2px solid ${T.greenLight}`, borderTop: `2px solid ${T.green}`, borderRadius: '50%', animation: 'spin 0.75s linear infinite', flexShrink: 0 }} />;
 }
 
+function ChevronRight() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p style={{ margin: '0 0 8px 4px', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.9 }}>
+      {children}
+    </p>
+  );
+}
+
+function RowDivider() {
+  return <div style={{ height: '0.5px', background: T.border, marginLeft: 16 }} />;
+}
+
+function RowItem({ label, sub, href, onClick, danger }: {
+  label: string; sub?: string; href?: string;
+  onClick?: () => void; danger?: boolean;
+}) {
+  const color = danger ? T.danger : T.text;
+  const inner = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px' }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color }}>{label}</p>
+        {sub && <p style={{ margin: '2px 0 0', fontSize: 12, color: T.muted }}>{sub}</p>}
+      </div>
+      <div style={{ color: danger ? T.dangerBorder : T.muted, flexShrink: 0 }}>
+        <ChevronRight />
+      </div>
+    </div>
+  );
+
+  if (href) {
+    return (
+      <motion.a href={href} whileTap={{ scale: 0.99 }} transition={SPRING_TAP}
+        style={{ display: 'block', textDecoration: 'none' }}>
+        {inner}
+      </motion.a>
+    );
+  }
+  return (
+    <motion.div
+      onClick={onClick}
+      role="button" tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); } }}
+      whileTap={{ scale: 0.99 }}
+      transition={SPRING_TAP}
+      style={{ cursor: 'pointer' }}>
+      {inner}
+    </motion.div>
+  );
+}
+
+function GroupCard({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ ...SPRING_UI, delay }}
+      style={{
+        background: T.glassCard,
+        border: T.glassCardBd,
+        boxShadow: T.glassCardSh,
+        borderRadius: T.r,
+        overflow: 'hidden',
+      }}>
+      {children}
+    </motion.div>
+  );
+}
+
 export default function ProfilePage() {
   const router = useRouter();
-  const [email,      setEmail]      = useState<string | null>(null);
-  const [name,       setName]       = useState<string | null>(null);
-  const [avatarUrl,  setAvatarUrl]  = useState<string | null>(null);
-  const [plantCount, setPlantCount] = useState<number | null>(null);
+  const [email,       setEmail]       = useState<string | null>(null);
+  const [name,        setName]        = useState<string | null>(null);
+  const [avatarUrl,   setAvatarUrl]   = useState<string | null>(null);
+  const [plantCount,  setPlantCount]  = useState<number | null>(null);
   const [memberSince, setMemberSince] = useState<string | null>(null);
-  const [loading,    setLoading]    = useState(true);
-  const [signingOut, setSigningOut] = useState(false);
+  const [loading,     setLoading]     = useState(true);
+  const [signingOut,  setSigningOut]  = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -71,108 +138,155 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <main style={{ minHeight: '100vh', background: T.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <main style={{ minHeight: '100dvh', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Spinner size={28} />
       </main>
     );
   }
 
-  const initial = (name ?? email ?? '?')[0].toUpperCase();
+  const displayName = name ?? email?.split('@')[0] ?? 'My Profile';
+  const initial     = displayName[0].toUpperCase();
+
+  const featureHref = buildEmailHref('Plant Care — Feature Request', [
+    'Hi Sagar,',
+    '',
+    'I have a feature idea for Plant Care!',
+    '',
+    'What I want to do:',
+    '(describe the feature here)',
+    '',
+    'Why it would help me:',
+    '(what problem does it solve?)',
+  ], email);
+
+  const reportHref = buildEmailHref('Plant Care — Problem Report', [
+    'Hi Sagar,',
+    '',
+    'I ran into a problem with Plant Care:',
+    '',
+    'What happened:',
+    '(describe the issue here)',
+    '',
+    'Steps to reproduce:',
+    '1.',
+    '2.',
+  ], email);
 
   return (
-    <main style={{ maxWidth: 480, margin: '0 auto', minHeight: '100vh', background: T.bg, paddingBottom: 110 }}>
+    <main style={{ maxWidth: 480, margin: '0 auto', minHeight: '100dvh', background: 'transparent', paddingBottom: 110 }}>
 
-      {/* Header */}
-      <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: '52px 20px 28px', textAlign: 'center' }}>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={SPRING}
-          style={{
-            width: 84, height: 84, borderRadius: '50%', margin: '0 auto 14px',
-            background: avatarUrl ? 'none' : `linear-gradient(135deg, ${T.green}, ${T.greenDark})`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            overflow: 'hidden', boxShadow: T.shadowGreen,
-          }}>
-          {avatarUrl
-            ? <img src={avatarUrl} alt="" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <span style={{ fontSize: 34, fontWeight: 800, color: '#fff' }}>{initial}</span>}
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING, delay: 0.05 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: T.text, margin: '0 0 3px', letterSpacing: -0.3 }}>
-            {name ?? 'My Profile'}
-          </h1>
-          <p style={{ fontSize: 13, color: T.muted, margin: 0 }}>{email}</p>
-        </motion.div>
+      {/* ── Sticky glass header ── */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 50,
+        background: T.glassChromeBase,
+        backdropFilter: T.glassChromeBlur,
+        WebkitBackdropFilter: T.glassChromeBlur,
+        borderBottom: T.glassChromeBd,
+        boxShadow: T.glassChromeSh,
+        padding: `calc(env(safe-area-inset-top, 20px) + 10px) 20px 14px`,
+      }}>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: T.text, letterSpacing: -0.4 }}>Profile</h1>
       </div>
 
-      <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ padding: '20px 16px 0', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-        {/* Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING, delay: 0.1 }}
-          style={{ display: 'flex', background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.r, boxShadow: T.shadow, overflow: 'hidden' }}>
-          <div style={{ flex: 1, padding: '16px 8px', textAlign: 'center', borderRight: `1px solid ${T.border}` }}>
-            <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: T.green }}>{plantCount ?? '—'}</p>
-            <p style={{ margin: '2px 0 0', fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: 600 }}>Plants</p>
+        {/* ── Identity card ── */}
+        <GroupCard delay={0}>
+          <div style={{ padding: '24px 20px', textAlign: 'center' }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.88 }} animate={{ opacity: 1, scale: 1 }} transition={SPRING_UI}
+              style={{
+                width: 80, height: 80, borderRadius: '50%',
+                margin: '0 auto 14px',
+                background: avatarUrl ? 'none' : `linear-gradient(135deg, ${T.green}, ${T.greenDark})`,
+                boxShadow: '0 4px 20px rgba(46,125,50,0.28)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                overflow: 'hidden',
+              }}>
+              {avatarUrl
+                ? <img src={avatarUrl} alt="" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <span style={{ fontSize: 32, fontWeight: 800, color: '#fff' }}>{initial}</span>}
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING_UI, delay: 0.06 }}>
+              <p style={{ margin: '0 0 3px', fontSize: 20, fontWeight: 800, color: T.text, letterSpacing: -0.3 }}>
+                {displayName}
+              </p>
+              <p style={{ margin: 0, fontSize: 13, color: T.muted }}>{email}</p>
+            </motion.div>
           </div>
-          <div style={{ flex: 1.6, padding: '16px 8px', textAlign: 'center' }}>
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: T.text, lineHeight: '30px' }}>{memberSince ?? '—'}</p>
-            <p style={{ margin: '2px 0 0', fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: 600 }}>Member since</p>
+        </GroupCard>
+
+        {/* ── Stats ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ ...SPRING_UI, delay: 0.08 }}
+          style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div style={{ background: T.glassCard, border: T.glassCardBd, boxShadow: T.glassCardSh, borderRadius: T.rSm, padding: '16px 12px', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: 28, fontWeight: 800, color: T.green, lineHeight: 1 }}>
+              {plantCount ?? '—'}
+            </p>
+            <p style={{ margin: '5px 0 0', fontSize: 11, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: 600 }}>
+              Plants
+            </p>
+          </div>
+          <div style={{ background: T.glassCard, border: T.glassCardBd, boxShadow: T.glassCardSh, borderRadius: T.rSm, padding: '16px 12px', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: memberSince && memberSince.length > 12 ? 13 : 17, fontWeight: 800, color: T.text, lineHeight: 1.25 }}>
+              {memberSince ?? '—'}
+            </p>
+            <p style={{ margin: '5px 0 0', fontSize: 11, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: 600 }}>
+              Member since
+            </p>
           </div>
         </motion.div>
 
-        {/* Feature request */}
-        <motion.a
-          href={buildFeatureRequestHref(email)}
-          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING, delay: 0.15 }}
-          whileTap={{ scale: 0.98 }}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 14,
-            background: T.greenLight, border: `1.5px solid ${T.greenMid}`,
-            borderRadius: T.r, padding: '16px 18px', boxShadow: T.shadow,
-            textDecoration: 'none', cursor: 'pointer',
-          }}>
-          <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <span style={{ fontSize: 20 }}>💡</span>
-          </div>
-          <div style={{ flex: 1 }}>
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: T.greenDark }}>Request a feature</p>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: T.sub }}>Have an idea? Send it straight to the developer</p>
-          </div>
-          <span style={{ fontSize: 16, color: T.green }}>→</span>
-        </motion.a>
+        {/* ── Help & Support ── */}
+        <div>
+          <SectionLabel>Help &amp; Support</SectionLabel>
+          <GroupCard delay={0.12}>
+            <RowItem
+              label="Request a feature"
+              sub="Share an idea with the developer"
+              href={featureHref}
+            />
+            <RowDivider />
+            <RowItem
+              label="Report a problem"
+              sub="Something not working? Let us know"
+              href={reportHref}
+            />
+          </GroupCard>
+        </div>
 
-        {/* App info */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING, delay: 0.2 }}
-          style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.r, boxShadow: T.shadow, overflow: 'hidden' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderBottom: `1px solid ${T.border}` }}>
-            <span style={{ fontSize: 13, color: T.sub, fontWeight: 500 }}>App</span>
-            <span style={{ fontSize: 13, color: T.text, fontWeight: 600 }}>Plant Care</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px' }}>
-            <span style={{ fontSize: 13, color: T.sub, fontWeight: 500 }}>Version</span>
-            <span style={{ fontSize: 13, color: T.text, fontWeight: 600 }}>1.0</span>
-          </div>
-        </motion.div>
+        {/* ── About ── */}
+        <div>
+          <SectionLabel>About</SectionLabel>
+          <GroupCard delay={0.16}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px' }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Plant Care</span>
+              <span style={{ fontSize: 13, color: T.muted }}>Version 1.0</span>
+            </div>
+            <RowDivider />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px' }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Made with</span>
+              <span style={{ fontSize: 13, color: T.muted }}>🌱 in India</span>
+            </div>
+          </GroupCard>
+        </div>
 
-        {/* Log out */}
-        <motion.button
-          onClick={signOut} disabled={signingOut}
-          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING, delay: 0.25 }}
-          whileTap={{ scale: 0.98 }}
-          style={{
-            width: '100%', padding: 15, marginTop: 4,
-            background: T.surface, color: T.danger,
-            border: `1.5px solid ${T.dangerBorder}`, borderRadius: T.rSm,
-            fontSize: 14, fontWeight: 600,
-            cursor: signingOut ? 'default' : 'pointer', opacity: signingOut ? 0.6 : 1,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          }}>
-          {signingOut ? <><Spinner /> Signing out…</> : 'Log out'}
-        </motion.button>
+        {/* ── Account ── */}
+        <div>
+          <SectionLabel>Account</SectionLabel>
+          <GroupCard delay={0.20}>
+            <RowItem label="Sign out" danger onClick={signOut} />
+          </GroupCard>
+        </div>
+
+        {signingOut && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, color: T.muted, fontSize: 13 }}>
+            <Spinner size={16} /> Signing out…
+          </div>
+        )}
+
       </div>
 
       <Nav />
