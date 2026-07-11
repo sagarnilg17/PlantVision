@@ -12,7 +12,7 @@ import { InstallBanner } from '@/components/InstallBanner';
 import { PermaTipsCarousel } from '@/components/PermaTipsCarousel';
 import { T } from '@/lib/theme';
 
-const SPRING = { type: 'spring' as const, stiffness: 340, damping: 36 };
+const SPRING = { type: 'spring' as const, bounce: 0, duration: 0.35 };
 
 type Plant = {
   id: string; plant_name: string; nickname: string | null;
@@ -54,7 +54,7 @@ function PlantAvatar({ plant, size = 88 }: { plant: Plant; size?: number }) {
   }
   return (
     <div style={{ width: size, height: size, flexShrink: 0, borderRadius: radius, overflow: 'hidden', border: `1px solid ${T.border}`, background: isIll ? '#fff' : T.greenLight }}>
-      <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: isIll ? 'contain' : 'cover' }} />
+      <img src={src} alt={plant.plant_name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: isIll ? 'contain' : 'cover' }} />
     </div>
   );
 }
@@ -90,6 +90,9 @@ function PlantCard({ p, onClick, idx, userId, onRefresh }: {
   return (
     <motion.div
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.15 } }}
@@ -136,23 +139,28 @@ function PlantCard({ p, onClick, idx, userId, onRefresh }: {
           {overdue && (
             <button
               onClick={quickWater}
-              onTouchEnd={quickWater}
               disabled={watering}
+              aria-label={`Water ${p.nickname || p.plant_name}`}
               style={{
-                width: 30, height: 30, borderRadius: '50%',
-                background: watered ? T.green : T.green,
-                color: '#fff', border: 'none', flexShrink: 0,
+                width: 44, height: 44, borderRadius: '50%',
+                background: 'transparent', border: 'none', flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: watering ? 'default' : 'pointer',
+                cursor: watering ? 'default' : 'pointer', padding: 0,
+              }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: '50%',
+                background: T.green, color: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
                 boxShadow: watered ? 'none' : '0 2px 8px rgba(46,125,50,0.4)',
                 fontSize: 13,
                 transition: 'transform 0.12s ease',
                 transform: watered ? 'scale(1.15)' : 'scale(1)',
               }}>
-              {watering
-                ? <div style={{ width: 13, height: 13, border: '2px solid rgba(255,255,255,0.4)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                : watered ? '✓' : '💧'
-              }
+                {watering
+                  ? <div style={{ width: 13, height: 13, border: '2px solid rgba(255,255,255,0.4)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                  : watered ? '✓' : '💧'
+                }
+              </div>
             </button>
           )}
 
@@ -210,14 +218,22 @@ export default function Dashboard() {
   const [checking, setChecking] = useState(true);
   const [name,     setName]     = useState('');
   const [userId,   setUserId]   = useState<string | null>(null);
-  const [search,   setSearch]   = useState('');
+  const [search,    setSearch]    = useState('');
+  const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(async (uid: string) => {
-    const { data } = await supabase.from('plants')
-      .select('id, plant_name, nickname, scientific_name, image_urls, next_watering_due, light_level, plant_health, plant_health_details, illustration_url, watering_frequency')
-      .eq('user_id', uid).order('next_watering_due', { ascending: true });
-    if (data) setPlants(data as Plant[]);
-    setChecking(false);
+    setLoadError(false);
+    try {
+      const { data, error } = await supabase.from('plants')
+        .select('id, plant_name, nickname, scientific_name, image_urls, next_watering_due, light_level, plant_health, plant_health_details, illustration_url, watering_frequency')
+        .eq('user_id', uid).order('next_watering_due', { ascending: true });
+      if (error) throw error;
+      if (data) setPlants(data as Plant[]);
+    } catch {
+      setLoadError(true);
+    } finally {
+      setChecking(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -245,8 +261,14 @@ export default function Dashboard() {
   return (
     <main style={{ maxWidth: 480, margin: '0 auto', minHeight: '100vh', background: T.bg, paddingBottom: 88 }}>
 
-      {/* Header */}
-      <div style={{ background: T.surface, padding: '56px 20px 0' }}>
+      {/* Header — sticky glass layer, content scrolls under */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 50,
+        background: 'rgba(246,250,246,0.88)',
+        backdropFilter: 'blur(24px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        padding: 'calc(env(safe-area-inset-top, 20px) + 16px) 20px 0',
+      }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 18 }}>
           <div>
             <p style={{ fontSize: 12, color: T.muted, margin: '0 0 3px', letterSpacing: 0.3 }}>{today}</p>
@@ -263,7 +285,7 @@ export default function Dashboard() {
             {[
               { value: plants.length,              label: 'Plants',      color: T.text },
               { value: due.length,                 label: 'Water today', color: due.length > 0 ? T.warn : T.sub },
-              { value: plants.length - due.length, label: 'Thriving',    color: T.green },
+              { value: plants.filter(p => p.plant_health === 'healthy' && (!p.next_watering_due || dayDiff(p.next_watering_due) > 0)).length, label: 'Healthy', color: T.green },
             ].map((s, i, arr) => (
               <motion.div
                 key={s.label}
@@ -273,7 +295,7 @@ export default function Dashboard() {
                 style={{ flex: 1, padding: '14px 0', textAlign: 'center', borderRight: i < arr.length - 1 ? `1px solid ${T.border}` : 'none' }}
               >
                 <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: s.color }}>{s.value}</p>
-                <p style={{ margin: '2px 0 0', fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.7, fontWeight: 600 }}>{s.label}</p>
+                <p style={{ margin: '2px 0 0', fontSize: 10, color: T.muted, letterSpacing: 0.3, fontWeight: 500 }}>{s.label}</p>
               </motion.div>
             ))}
           </div>
@@ -284,9 +306,6 @@ export default function Dashboard() {
 
         {/* PWA install prompt */}
         {!checking && <InstallBanner />}
-
-        {/* Permaculture tips carousel */}
-        {!checking && <PermaTipsCarousel plants={plants} />}
 
         {/* Skeleton */}
         {checking && [1, 2, 3].map((_, i) => (
@@ -311,7 +330,7 @@ export default function Dashboard() {
                     style={{ flexShrink: 0, cursor: 'pointer', textAlign: 'center', width: 58 }}>
                     <div style={{ width: 58, height: 58, borderRadius: 15, overflow: 'hidden', background: avatarBg(p.plant_name), border: `2px solid ${T.amberBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {src
-                        ? <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: p.illustration_url ? 'contain' : 'cover' }} />
+                        ? <img src={src} alt={p.nickname || p.plant_name} style={{ width: '100%', height: '100%', objectFit: p.illustration_url ? 'contain' : 'cover' }} />
                         : <span style={{ fontSize: 22, fontWeight: 800, color: T.green }}>{initial}</span>
                       }
                     </div>
@@ -347,22 +366,40 @@ export default function Dashboard() {
               }}
             />
             {search && (
-              <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 11, top: '50%', transform: 'translateY(-50%)', background: T.border, border: 'none', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: T.sub, fontSize: 12, fontWeight: 700 }}>
-                ×
+              <button onClick={() => setSearch('')} aria-label="Clear search" style={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}>
+                <div style={{ width: 18, height: 18, borderRadius: '50%', background: T.border, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.sub, fontSize: 12, fontWeight: 700 }}>×</div>
               </button>
             )}
           </div>
         )}
 
-        {/* Section label */}
-        {!checking && plants.length > 0 && (
-          <p style={{ fontSize: 11, color: T.muted, textTransform: 'uppercase', letterSpacing: 1.2, margin: '0 0 12px', fontWeight: 700 }}>
-            {search ? `${filtered.length} result${filtered.length !== 1 ? 's' : ''}` : `All plants · ${plants.length}`}
+        {/* Error state */}
+        {!checking && loadError && (
+          <div role="alert" style={{ textAlign: 'center', padding: '64px 24px 48px' }}>
+            <div style={{ width: 64, height: 64, borderRadius: 20, background: T.dangerLight, border: `1px solid ${T.dangerBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={T.danger} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+            <p style={{ fontSize: 17, fontWeight: 700, color: T.text, margin: '0 0 6px' }}>Couldn't load your plants</p>
+            <p style={{ fontSize: 13, color: T.sub, margin: '0 0 24px', lineHeight: 1.55 }}>Check your connection and try again.</p>
+            <button
+              onClick={() => { setChecking(true); if (userId) load(userId); }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: T.green, color: '#fff', border: 'none', borderRadius: T.rPill, padding: '11px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+              Try again
+            </button>
+          </div>
+        )}
+
+        {/* Search results count */}
+        {!checking && !loadError && search && (
+          <p style={{ fontSize: 12, color: T.sub, margin: '0 0 12px', fontWeight: 500 }}>
+            {filtered.length} result{filtered.length !== 1 ? 's' : ''}
           </p>
         )}
 
         {/* Empty state */}
-        {!checking && plants.length === 0 && (
+        {!checking && !loadError && plants.length === 0 && (
           <div style={{ textAlign: 'center', padding: '72px 24px 48px' }}>
             <div style={{ width: 100, height: 100, borderRadius: 28, background: T.greenLight, border: `1px solid ${T.greenMid}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
               <svg width="52" height="52" viewBox="0 0 64 64" fill="none">
@@ -407,6 +444,9 @@ export default function Dashboard() {
             ))}
           </AnimatePresence>
         )}
+
+        {/* Permaculture tips — discovery content, below primary content */}
+        {!checking && !loadError && <PermaTipsCarousel plants={plants} />}
       </div>
 
       <Nav />

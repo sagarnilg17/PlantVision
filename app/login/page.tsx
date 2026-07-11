@@ -76,18 +76,6 @@ export default function LoginPage() {
         position: 'relative', overflow: 'hidden',
         flexShrink: 0,
       }}>
-        {/* decorative rings */}
-        <div style={{ position: 'absolute', top: -80, right: -80, width: 260, height: 260, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.07)' }} />
-        <div style={{ position: 'absolute', top: -40, right: -40, width: 160, height: 160, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.07)' }} />
-        <div style={{ position: 'absolute', bottom: -60, left: -60, width: 200, height: 200, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.06)' }} />
-        {/* subtle leaf pattern dots */}
-        <div style={{ position: 'absolute', top: 32, left: 24, opacity: 0.15 }}>
-          {[0,1,2].map(i => <div key={i} style={{ width: 4, height: 4, borderRadius: '50%', background: '#fff', margin: '0 0 14px' }} />)}
-        </div>
-        <div style={{ position: 'absolute', top: 56, left: 42, opacity: 0.10 }}>
-          {[0,1].map(i => <div key={i} style={{ width: 3, height: 3, borderRadius: '50%', background: '#fff', margin: '0 0 12px' }} />)}
-        </div>
-
         <div style={{ position: 'relative', textAlign: 'center' }}>
           <div style={{ marginBottom: 16 }}><PlantMark /></div>
           <h1 style={{ fontSize: 30, fontWeight: 700, color: '#fff', margin: '0 0 8px', letterSpacing: -0.5 }}>Plant Care</h1>
@@ -101,7 +89,7 @@ export default function LoginPage() {
       <div style={{
         flex: 1,
         background: T.surface,
-        borderRadius: '24px 24px 0 0',
+        borderRadius: `${T.rSheet} ${T.rSheet} 0 0`,
         marginTop: -22,
         padding: '32px 24px 40px',
         display: 'flex', flexDirection: 'column',
@@ -148,10 +136,11 @@ export default function LoginPage() {
               <div style={{ flex: 1, height: 1, background: T.border }} />
             </div>
 
-            <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6, display: 'block' }}>
+            <label htmlFor="login-email" style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6, display: 'block' }}>
               Email address
             </label>
             <input
+              id="login-email"
               type="email" placeholder="you@example.com" autoFocus
               value={email} onChange={e => setEmail(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && canSubmitEmail && sendOtp()}
@@ -176,11 +165,12 @@ export default function LoginPage() {
           </>
         ) : (
           <>
-            <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6, display: 'block' }}>
+            <label htmlFor="login-otp" style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6, display: 'block' }}>
               6-digit code
             </label>
             <input
-              type="text" inputMode="numeric" placeholder="000000" autoFocus
+              id="login-otp"
+              type="text" inputMode="numeric" placeholder="000000" autoFocus autoComplete="one-time-code"
               value={otp} onChange={e => setOtp(e.target.value)} maxLength={6}
               onKeyDown={e => e.key === 'Enter' && canSubmitOtp && verifyOtp()}
               style={{
@@ -210,7 +200,7 @@ export default function LoginPage() {
         )}
 
         {error && (
-          <div style={{ marginTop: 14, padding: '12px 14px', background: T.dangerLight, border: `1px solid ${T.dangerBorder}`, borderRadius: T.rSm, color: T.danger, fontSize: 14 }}>
+          <div role="alert" style={{ marginTop: 14, padding: '12px 14px', background: T.dangerLight, border: `1px solid ${T.dangerBorder}`, borderRadius: T.rSm, color: T.danger, fontSize: 14 }}>
             {error}
           </div>
         )}

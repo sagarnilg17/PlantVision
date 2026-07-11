@@ -1,10 +1,15 @@
 'use client';
 import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { T } from '@/lib/theme';
 
-const SPRING = { type: 'spring' as const, stiffness: 400, damping: 30 };
+// Critically damped (no overshoot) — default UI transitions
+const SPRING_UI  = { type: 'spring' as const, bounce: 0,    duration: 0.35 };
+// Fast snap — finger-press feedback, must feel instant
+const SPRING_TAP = { type: 'spring' as const, bounce: 0,    duration: 0.18 };
+// Underdamped — FAB & momentum-driven reveals feel physical
+const SPRING_FAB = { type: 'spring' as const, bounce: 0.18, duration: 0.42 };
 
 function HomeIcon({ active }: { active: boolean }) {
   return (
@@ -77,16 +82,29 @@ function TabButton({ label, active, onClick, children }: {
   label: string; active: boolean; onClick: () => void; children: React.ReactNode;
 }) {
   return (
-    <button onClick={onClick} style={{
-      flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      gap: 3, padding: '10px 0',
-      background: 'none', border: 'none', cursor: 'pointer',
-      color: active ? T.green : T.muted,
-      minHeight: 56, transition: 'color 0.15s',
-    }}>
-      {children}
+    <motion.button
+      onClick={onClick}
+      whileTap={{ scale: 0.86 }}
+      transition={SPRING_TAP}
+      style={{
+        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        gap: 4, padding: '10px 0',
+        background: 'none', border: 'none', cursor: 'pointer',
+        color: active ? T.green : T.muted,
+        minHeight: 56,
+      }}>
+      <div style={{ position: 'relative', padding: '6px 18px', borderRadius: 14 }}>
+        {active && (
+          <motion.div
+            layoutId="nav-pill"
+            style={{ position: 'absolute', inset: 0, borderRadius: 14, background: T.greenLight }}
+            transition={SPRING_UI}
+          />
+        )}
+        <span style={{ position: 'relative', zIndex: 1 }}>{children}</span>
+      </div>
       <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, letterSpacing: 0.3 }}>{label}</span>
-    </button>
+    </motion.button>
   );
 }
 
@@ -133,7 +151,7 @@ export function Nav() {
               initial={{ opacity: 0, y: 14, scale: 0.85 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 14, scale: 0.85 }}
-              transition={{ ...SPRING, delay: fabOpen ? (ACTIONS.length - 1 - i) * 0.04 : 0 }}
+              transition={{ ...SPRING_FAB, delay: fabOpen ? (ACTIONS.length - 1 - i) * 0.04 : 0 }}
               whileTap={{ scale: 0.96 }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
@@ -158,7 +176,7 @@ export function Nav() {
             rotate: fabOpen ? 45 : 0,
             background: fabOpen ? T.greenDark : T.green,
           }}
-          transition={SPRING}
+          transition={SPRING_FAB}
           aria-label={fabOpen ? 'Close scan menu' : 'Scan a plant'}
           style={{
             width: 56, height: 56, borderRadius: 16,
@@ -173,21 +191,24 @@ export function Nav() {
       {/* ── Bottom navigation bar ── */}
       <nav style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
-        background: T.surface,
-        borderTop: `1px solid ${T.border}`,
+        background: 'rgba(246,250,246,0.82)',
+        backdropFilter: 'blur(24px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        borderTop: '1px solid rgba(255,255,255,0.55)',
         display: 'flex', alignItems: 'center',
-        boxShadow: '0 -4px 20px rgba(0,0,0,0.07)',
         paddingBottom: 'env(safe-area-inset-bottom, 4px)',
       }}>
-        <TabButton label="Garden" active={path === '/'} onClick={() => go('/')}>
-          <HomeIcon active={path === '/'} />
-        </TabButton>
-        <TabButton label="Schedule" active={path === '/schedule'} onClick={() => go('/schedule')}>
-          <CalendarIcon active={path === '/schedule'} />
-        </TabButton>
-        <TabButton label="Profile" active={path === '/profile'} onClick={() => go('/profile')}>
-          <ProfileIcon active={path === '/profile'} />
-        </TabButton>
+        <LayoutGroup>
+          <TabButton label="Garden" active={path === '/'} onClick={() => go('/')}>
+            <HomeIcon active={path === '/'} />
+          </TabButton>
+          <TabButton label="Schedule" active={path === '/schedule'} onClick={() => go('/schedule')}>
+            <CalendarIcon active={path === '/schedule'} />
+          </TabButton>
+          <TabButton label="Profile" active={path === '/profile'} onClick={() => go('/profile')}>
+            <ProfileIcon active={path === '/profile'} />
+          </TabButton>
+        </LayoutGroup>
       </nav>
     </>
   );

@@ -20,7 +20,7 @@ export const T = {
   // Text (M3 on-surface)
   text:         '#191D19',
   sub:          '#3F4E3F',
-  muted:        '#8B9E8B',
+  muted:        '#6B7F6B',
 
   // Semantic
   danger:       '#BA1A1A',
@@ -34,14 +34,18 @@ export const T = {
   amberText:    '#7D3C00',
 
   // Elevation (M3 uses tonal, not drop shadows)
-  shadow:       '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
-  shadowMd:     '0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)',
-  shadowGreen:  '0 4px 20px rgba(46,125,50,0.28)',
+  shadow:        '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+  shadowMd:      '0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)',
+  shadowGreen:   '0 4px 20px rgba(46,125,50,0.28)',
+  scrimDark:     'rgba(0,0,0,0.45)',
+  scrimLight:    'rgba(0,0,0,0.12)',
+  shadowOverlay: 'rgba(0,0,0,0.15)',
 
   // M3 shape scale
   r:     '20px',   // medium
   rLg:   '28px',   // large
   rXl:   '28px',   // extra-large
-  rSm:   '12px',   // small
-  rPill: '50px',
+  rSm:    '12px',   // small
+  rSheet: '24px',   // bottom sheet / card lift
+  rPill:  '50px',
 } as const;

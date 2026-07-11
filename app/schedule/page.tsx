@@ -206,7 +206,7 @@ export default function SchedulePage() {
                           cursor: isBusy ? 'default' : 'pointer', opacity: isBusy ? 0.7 : 1,
                         }}>
                         {isBusy
-                          ? <div style={{ width: 12, height: 12, border: '2px solid rgba(0,0,0,0.15)', borderTop: `2px solid ${d <= 0 ? '#fff' : T.green}`, borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                          ? <div style={{ width: 12, height: 12, border: `2px solid ${T.shadowOverlay}`, borderTop: `2px solid ${d <= 0 ? '#fff' : T.green}`, borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
                           : <span>💧</span>
                         }
                         {!isBusy && 'Water'}

@@ -324,10 +324,10 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
 
       {/* ── Edit sheet ── */}
       {editOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.45)' }}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: T.scrimDark }}
           onClick={() => setEditOpen(false)}>
           <div
-            style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 480, background: '#fff', borderRadius: '24px 24px 0 0', padding: `24px 20px calc(env(safe-area-inset-bottom, 4px) + 28px)`, boxShadow: '0 -8px 32px rgba(0,0,0,0.12)', animation: 'fadeUp 0.22s ease' }}
+            style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 480, background: '#fff', borderRadius: '24px 24px 0 0', padding: `24px 20px calc(env(safe-area-inset-bottom, 4px) + 28px)`, boxShadow: `0 -8px 32px ${T.scrimLight}`, animation: 'fadeUp 0.22s ease' }}
             onClick={e => e.stopPropagation()}>
             <div style={{ width: 36, height: 4, background: T.border, borderRadius: 2, margin: '0 auto 22px' }} />
             <h3 style={{ margin: '0 0 22px', fontSize: 18, fontWeight: 800, color: T.text }}>Edit plant</h3>
@@ -359,7 +359,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
 
       {/* ── Delete confirmation ── */}
       {deleteConfirm && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: T.scrimDark, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
           onClick={() => setDeleteConfirm(false)}>
           <div style={{ background: '#fff', borderRadius: T.r, padding: 28, width: '100%', maxWidth: 340, boxShadow: T.shadowMd, animation: 'fadeUp 0.18s ease' }}
             onClick={e => e.stopPropagation()}>

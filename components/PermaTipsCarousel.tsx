@@ -8,7 +8,8 @@ import {
 import { T } from '@/lib/theme';
 import { getPersonalizedTips, type PermaTip, type PlantSummary } from '@/lib/permacultureTips';
 
-const SPRING = { type: 'spring' as const, stiffness: 360, damping: 38 };
+const SPRING        = { type: 'spring' as const, bounce: 0,    duration: 0.35 };
+const SPRING_BOUNCE = { type: 'spring' as const, bounce: 0.18, duration: 0.42 };;
 const STACK_VISIBLE = 3;
 
 // ─── Card face ────────────────────────────────────────────────────────────────
@@ -52,14 +53,14 @@ function CardFace({ tip, stackIndex }: { tip: PermaTip; stackIndex: number }) {
       {/* Title */}
       <p style={{
         margin: 0, fontSize: 15, fontWeight: 800,
-        color: '#1a1a1a', lineHeight: 1.3, letterSpacing: -0.3,
+        color: T.text, lineHeight: 1.3, letterSpacing: -0.3,
       }}>
         {tip.title}
       </p>
 
       {/* Body */}
       <p style={{
-        margin: 0, fontSize: 12.5, color: '#525c52',
+        margin: 0, fontSize: 12.5, color: T.sub,
         lineHeight: 1.65, flex: 1,
         display: '-webkit-box',
         WebkitLineClamp: 3,
@@ -174,7 +175,7 @@ export function PermaTipsCarousel({ plants }: { plants?: PlantSummary[] }) {
       {/* ── Header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
-          <p style={{ margin: 0, fontSize: 11, color: T.muted, textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: 700 }}>
+          <p style={{ margin: 0, fontSize: 14, color: T.text, fontWeight: 700, letterSpacing: -0.1 }}>
             {isPersonalized ? 'Tips for Your Garden' : 'Daily Wisdom'}
           </p>
           <p style={{ margin: '2px 0 0', fontSize: 11, color: T.muted }}>
@@ -191,7 +192,7 @@ export function PermaTipsCarousel({ plants }: { plants?: PlantSummary[] }) {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              transition={SPRING}
+              transition={SPRING_BOUNCE}
               style={{
                 fontSize: 10, fontWeight: 700, color: T.green,
                 background: T.greenLight, border: `1px solid ${T.greenMid}`,
