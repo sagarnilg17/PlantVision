@@ -103,6 +103,7 @@ function PlantCard({ p, idx, userId, onRefresh }: {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.15 } }}
       transition={{ ...SPRING_UI, delay: idx * 0.05 }}
+      whileHover={{ y: -1 }}
       whileTap={{ scale: 0.975 }}
       style={{
         background: T.glassCard,

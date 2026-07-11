@@ -26,34 +26,34 @@ colors:
   amber-text: "#7D3C00"
 typography:
   display:
-    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    fontFamily: "Plus Jakarta Sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
     fontSize: "26px"
     fontWeight: 800
     lineHeight: 1.15
     letterSpacing: "-0.4px"
   headline:
-    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    fontFamily: "Plus Jakarta Sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
     fontSize: "20px"
     fontWeight: 700
     lineHeight: 1.3
     letterSpacing: "-0.2px"
   title:
-    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    fontFamily: "Plus Jakarta Sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
     fontSize: "16px"
     fontWeight: 700
     lineHeight: 1.25
   body:
-    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    fontFamily: "Plus Jakarta Sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
     fontSize: "14px"
     fontWeight: 400
     lineHeight: 1.5
   caption:
-    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    fontFamily: "Plus Jakarta Sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
     fontSize: "12px"
     fontWeight: 400
     lineHeight: 1.4
   label:
-    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    fontFamily: "Plus Jakarta Sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
     fontSize: "11px"
     fontWeight: 700
     lineHeight: 1.2
@@ -124,7 +124,7 @@ The palette is rooted in a living forest green — organic and warm, not the gen
 This system explicitly rejects the category reflex: no stock-photo leaves on cream, no gamified streaks or XP bars, no dense scientific card stacks, no developer-tool dark mode with neon accents. The design earns trust through precision — specific watering schedules, exact health diagnoses — and through craft: micro-interactions that reward real actions, whitespace that communicates calm, and nothing on screen that doesn't serve the user's next move.
 
 **Key Characteristics:**
-- Single-font system (Inter) with weight jumps (400 / 700 / 800) carrying all typographic hierarchy
+- Single-font system (Plus Jakarta Sans) with weight jumps (400 / 700 / 800) carrying all typographic hierarchy
 - Tonal green surfaces; primary green reserved for CTAs and confirmed states only
 - M3-inspired elevation: flat by default, gentle drop shadows for interactive cards
 - Pill chips for semantic status; rounded-large cards for content; FAB for the primary scan action
@@ -177,11 +177,11 @@ A palette grown from a single seed: forest green (#2E7D32). The green is warm an
 
 ## 3. Typography
 
-**Body Font:** Inter, loaded via `next/font/google` as CSS variable `--font-inter`
+**Body Font:** Plus Jakarta Sans, loaded via `next/font/google` as CSS variable `--font-sans`
 
 Single-family system — no display serif or second family. Hierarchy is carried entirely through weight (400 / 700 / 800) and size. The weight jumps are large enough to read at a glance on a phone screen without relying on subtle differences.
 
-**Character:** Inter at heavy weights (700-800) with tight negative letter-spacing reads as confident and precise — fitting for an app that gives specific, trustworthy answers about your plants. At 400 weight it disappears in the best way: information, not decoration.
+**Character:** Plus Jakarta Sans is a geometric humanist sans with subtle warmth in its letterforms — the two-story `a`, the lifted optical baseline, the slight openness in round characters. At 800 weight it reads as confident and purposeful without feeling cold; at 400 it stays clean and readable without the clinical neutrality of utility-first typefaces. The right register for an app that gives specific, trustworthy answers and still feels like it was made by someone who cares about plants.
 
 ### Hierarchy
 

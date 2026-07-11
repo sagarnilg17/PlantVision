@@ -17,6 +17,26 @@ body {
 
 button, input, textarea { font-family: inherit; }
 
+/* Focus ring — used by all role="button" elements and interactive controls */
+*:focus-visible {
+  outline: 2px solid #2E7D32;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Placeholder contrast — meets 4.5:1 against white */
+::placeholder {
+  color: #5A7060;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }

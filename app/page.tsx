@@ -248,7 +248,7 @@ export default function Dashboard() {
         display: 'flex', alignItems: 'center', gap: 12,
       }}>
         <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: T.muted, letterSpacing: 0.5, textTransform: 'uppercase' }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: T.muted }}>
             {timeGreeting()}
           </p>
           <h1 style={{ margin: '2px 0 0', fontSize: 22, fontWeight: 800, color: T.text, letterSpacing: -0.4, lineHeight: 1.15 }}>
@@ -307,7 +307,7 @@ export default function Dashboard() {
                   ? `0 0 0 3px ${T.warnLight}`
                   : `0 0 0 3px ${T.greenLight}`,
               }} />
-              <span style={{ fontSize: 11, fontWeight: 700, color: T.sub, textTransform: 'uppercase', letterSpacing: 0.9 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: T.sub }}>
                 {attention.length > 0
                   ? `${attention.length} plant${attention.length === 1 ? '' : 's'} need${attention.length === 1 ? 's' : ''} care`
                   : 'All good today'}
@@ -376,7 +376,7 @@ export default function Dashboard() {
                   boxShadow: '0 4px 16px rgba(46,125,50,0.32)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                 }}>
-                + Scan plant
+                Scan a plant
               </motion.button>
               <motion.button
                 onClick={() => router.push('/plants')}
@@ -399,7 +399,7 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
               transition={{ ...SPRING_UI, delay: 0.18 }}
               style={{ marginTop: 30 }}>
-              <p style={{ margin: '0 0 12px 2px', fontSize: 11, fontWeight: 700, color: T.sub, textTransform: 'uppercase', letterSpacing: 0.9 }}>
+              <p style={{ margin: '0 0 12px 2px', fontSize: 14, fontWeight: 700, color: T.text }}>
                 Garden wisdom
               </p>
               <PermaTipsCarousel />

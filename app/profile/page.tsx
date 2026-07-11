@@ -38,7 +38,7 @@ function ChevronRight() {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ margin: '0 0 8px 4px', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.9 }}>
+    <p style={{ margin: '0 0 8px 4px', fontSize: 13, fontWeight: 700, color: T.sub }}>
       {children}
     </p>
   );
@@ -67,7 +67,7 @@ function RowItem({ label, sub, href, onClick, danger }: {
 
   if (href) {
     return (
-      <motion.a href={href} whileTap={{ scale: 0.99 }} transition={SPRING_TAP}
+      <motion.a href={href} whileTap={{ scale: 0.99 }} whileHover={{ backgroundColor: 'rgba(0,0,0,0.028)' }} transition={SPRING_TAP}
         style={{ display: 'block', textDecoration: 'none' }}>
         {inner}
       </motion.a>
@@ -79,6 +79,7 @@ function RowItem({ label, sub, href, onClick, danger }: {
       role="button" tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); } }}
       whileTap={{ scale: 0.99 }}
+      whileHover={{ backgroundColor: 'rgba(0,0,0,0.028)' }}
       transition={SPRING_TAP}
       style={{ cursor: 'pointer' }}>
       {inner}
@@ -225,7 +226,7 @@ export default function ProfilePage() {
             <p style={{ margin: 0, fontSize: 28, fontWeight: 800, color: T.green, lineHeight: 1 }}>
               {plantCount ?? '—'}
             </p>
-            <p style={{ margin: '5px 0 0', fontSize: 11, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: 600 }}>
+            <p style={{ margin: '5px 0 0', fontSize: 11, color: T.muted, fontWeight: 500 }}>
               Plants
             </p>
           </div>
@@ -233,7 +234,7 @@ export default function ProfilePage() {
             <p style={{ margin: 0, fontSize: memberSince && memberSince.length > 12 ? 13 : 17, fontWeight: 800, color: T.text, lineHeight: 1.25 }}>
               {memberSince ?? '—'}
             </p>
-            <p style={{ margin: '5px 0 0', fontSize: 11, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: 600 }}>
+            <p style={{ margin: '5px 0 0', fontSize: 11, color: T.muted, fontWeight: 500 }}>
               Member since
             </p>
           </div>

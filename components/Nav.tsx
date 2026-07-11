@@ -103,11 +103,9 @@ function TabButton({ label, active, onClick, children }: {
             layoutId="nav-pill"
             style={{
               position: 'absolute', inset: 0, borderRadius: 14,
-              background: T.glassChromeBase,
-              backdropFilter: T.glassChromeBlur,
-              WebkitBackdropFilter: T.glassChromeBlur,
-              boxShadow: T.glassChromeSh,
-              border: T.glassChromeBd,
+              background: 'rgba(46,125,50,0.10)',
+              border: '0.5px solid rgba(46,125,50,0.18)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.70), 0 2px 8px rgba(46,125,50,0.12)',
             }}
             transition={SPRING_UI}
           />
