@@ -213,6 +213,7 @@ export default function Dashboard() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) { router.push('/login'); return; }
+      if (!data.user.user_metadata?.onboarding_done) { router.push('/onboarding'); return; }
       setUserId(data.user.id);
       setName(
         (data.user.user_metadata?.full_name as string)

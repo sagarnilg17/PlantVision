@@ -4,12 +4,10 @@ import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { T } from '@/lib/theme';
 
-// Critically damped (no overshoot) — default UI transitions
 const SPRING_UI  = { type: 'spring' as const, bounce: 0,    duration: 0.35 };
-// Fast snap — finger-press feedback, must feel instant
 const SPRING_TAP = { type: 'spring' as const, bounce: 0,    duration: 0.18 };
-// Underdamped — FAB & momentum-driven reveals feel physical
 const SPRING_FAB = { type: 'spring' as const, bounce: 0.18, duration: 0.42 };
+const SPRING_NAV = { type: 'spring' as const, bounce: 0.08, duration: 0.5  };
 
 function HomeIcon({ active }: { active: boolean }) {
   return (
@@ -22,7 +20,6 @@ function HomeIcon({ active }: { active: boolean }) {
   );
 }
 
-// Grid of 4 squares — represents "collection of plants"
 function GridIcon({ active }: { active: boolean }) {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -61,13 +58,14 @@ function CameraIcon({ size = 22 }: { size?: number }) {
   );
 }
 
+// Arrow-up-from-line — the standard upload affordance
 function UploadIcon({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
       strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-      <circle cx="8.5" cy="8.5" r="1.5" />
-      <polyline points="21 15 16 10 5 21" />
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
     </svg>
   );
 }
@@ -118,9 +116,12 @@ function TabButton({ label, active, onClick, children }: {
 }
 
 export function Nav() {
-  const router = useRouter();
-  const path   = usePathname();
+  const router  = useRouter();
+  const path    = usePathname();
   const [fabOpen, setFabOpen] = useState(false);
+
+  // FAB only lives on the garden/plants page
+  const showFab = path === '/plants';
 
   const go = (dest: string) => {
     setFabOpen(false);
@@ -129,14 +130,14 @@ export function Nav() {
 
   const ACTIONS = [
     { label: 'Take photo',   icon: <CameraIcon size={18} />, dest: '/scan?mode=camera' },
-    { label: 'Upload photo', icon: <UploadIcon />,           dest: '/scan?mode=upload' },
+    { label: 'Upload photo', icon: <UploadIcon size={18} />, dest: '/scan?mode=upload' },
   ];
 
   return (
     <>
-      {/* Scrim behind the open speed dial */}
+      {/* Scrim behind open speed dial — only when FAB is showing */}
       <AnimatePresence>
-        {fabOpen && (
+        {fabOpen && showFab && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
@@ -146,71 +147,86 @@ export function Nav() {
         )}
       </AnimatePresence>
 
-      {/* ── FAB speed dial ── */}
-      <div style={{
-        position: 'fixed', right: 16, zIndex: 120,
-        bottom: 'calc(env(safe-area-inset-bottom, 4px) + 76px)',
-        display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12,
-      }}>
-        <AnimatePresence>
-          {fabOpen && ACTIONS.map((a, i) => (
+      {/* ── FAB speed dial — only on /plants ── */}
+      <AnimatePresence>
+        {showFab && (
+          <motion.div
+            initial={{ y: 20, opacity: 0, scale: 0.88 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 20, opacity: 0, scale: 0.88 }}
+            transition={SPRING_FAB}
+            style={{
+              position: 'fixed', right: 16, zIndex: 120,
+              bottom: 'calc(env(safe-area-inset-bottom, 4px) + 76px)',
+              display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12,
+            }}>
+
+            {/* Chip actions */}
+            <AnimatePresence>
+              {fabOpen && ACTIONS.map((a, i) => (
+                <motion.button
+                  key={a.label}
+                  onClick={() => go(a.dest)}
+                  initial={{ opacity: 0, y: 14, scale: 0.85 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 14, scale: 0.85 }}
+                  transition={{ ...SPRING_FAB, delay: fabOpen ? (ACTIONS.length - 1 - i) * 0.04 : 0 }}
+                  whileTap={{ scale: 0.96 }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    background: T.glassChromeBase, color: T.greenDark,
+                    backdropFilter: T.glassChromeBlur,
+                    WebkitBackdropFilter: T.glassChromeBlur,
+                    border: T.glassChromeBd,
+                    borderRadius: 16,
+                    padding: '13px 18px',
+                    fontSize: 13, fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: T.glassPanelSh,
+                  }}>
+                  {a.icon}
+                  {a.label}
+                </motion.button>
+              ))}
+            </AnimatePresence>
+
+            {/* Main FAB — rotates + to × when open */}
             <motion.button
-              key={a.label}
-              onClick={() => go(a.dest)}
-              initial={{ opacity: 0, y: 14, scale: 0.85 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 14, scale: 0.85 }}
-              transition={{ ...SPRING_FAB, delay: fabOpen ? (ACTIONS.length - 1 - i) * 0.04 : 0 }}
-              whileTap={{ scale: 0.96 }}
+              onClick={() => setFabOpen(o => !o)}
+              whileTap={{ scale: 0.92 }}
+              animate={{
+                rotate: fabOpen ? 45 : 0,
+                background: fabOpen ? T.greenDark : T.green,
+              }}
+              transition={SPRING_FAB}
+              aria-label={fabOpen ? 'Close scan menu' : 'Scan a plant'}
               style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                background: T.glassChromeBase, color: T.greenDark,
-                backdropFilter: T.glassChromeBlur,
-                WebkitBackdropFilter: T.glassChromeBlur,
-                border: T.glassChromeBd,
-                borderRadius: 16,
-                padding: '13px 18px',
-                fontSize: 13, fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: T.glassPanelSh,
+                width: 56, height: 56, borderRadius: 16,
+                color: '#fff', border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: T.shadowGreen,
               }}>
-              {a.icon}
-              {a.label}
+              {fabOpen ? <PlusIcon /> : <CameraIcon />}
             </motion.button>
-          ))}
-        </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        {/* Main FAB — rotates + to × when open */}
-        <motion.button
-          onClick={() => setFabOpen(o => !o)}
-          whileTap={{ scale: 0.92 }}
-          animate={{
-            rotate: fabOpen ? 45 : 0,
-            background: fabOpen ? T.greenDark : T.green,
-          }}
-          transition={SPRING_FAB}
-          aria-label={fabOpen ? 'Close scan menu' : 'Scan a plant'}
-          style={{
-            width: 56, height: 56, borderRadius: 16,
-            color: '#fff', border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: T.shadowGreen,
-          }}>
-          {fabOpen ? <PlusIcon /> : <CameraIcon />}
-        </motion.button>
-      </div>
-
-      {/* ── Bottom navigation bar — Liquid Glass chrome ── */}
-      <nav style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
-        background: T.glassChromeBase,
-        backdropFilter: T.glassChromeBlur,
-        WebkitBackdropFilter: T.glassChromeBlur,
-        borderTop: T.glassChromeBd,
-        boxShadow: T.glassChromeSh,
-        display: 'flex', alignItems: 'center',
-        paddingBottom: 'env(safe-area-inset-bottom, 4px)',
-      }}>
+      {/* ── Bottom navigation bar — spring entrance ── */}
+      <motion.nav
+        initial={{ y: 16, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={SPRING_NAV}
+        style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
+          background: T.glassChromeBase,
+          backdropFilter: T.glassChromeBlur,
+          WebkitBackdropFilter: T.glassChromeBlur,
+          borderTop: T.glassChromeBd,
+          boxShadow: T.glassChromeSh,
+          display: 'flex', alignItems: 'center',
+          paddingBottom: 'env(safe-area-inset-bottom, 4px)',
+        }}>
         <LayoutGroup>
           <TabButton label="Home"    active={path === '/'}        onClick={() => go('/')}>
             <HomeIcon    active={path === '/'} />
@@ -222,7 +238,7 @@ export function Nav() {
             <ProfileIcon active={path === '/profile'} />
           </TabButton>
         </LayoutGroup>
-      </nav>
+      </motion.nav>
     </>
   );
 }

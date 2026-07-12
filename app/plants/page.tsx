@@ -22,6 +22,8 @@ type Plant = {
   plant_health_details: string | null;
   illustration_url: string | null;
   watering_frequency: string;
+  confidence: string | null;
+  toxicity_info: string | null;
 };
 
 const dayDiff = (d: string) => Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);
@@ -76,6 +78,11 @@ function PlantCard({ p, idx, userId, onRefresh }: {
   const wl      = d !== null ? waterLabel(d) : null;
   const hm      = healthMeta(p.plant_health);
   const firstNote = p.plant_health_details ? p.plant_health_details.split(';')[0].trim() : null;
+  const isToxic = (() => {
+    if (!p.toxicity_info) return false;
+    try { const t = JSON.parse(p.toxicity_info); return t.animals || t.humans; }
+    catch { return false; }
+  })();
 
   const quickWater = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -129,8 +136,32 @@ function PlantCard({ p, idx, userId, onRefresh }: {
           {p.nickname ? p.plant_name : (p.scientific_name ?? '')}
         </p>
 
-        {/* Watering row */}
-        <div style={{ display: 'flex', gap: 6, marginTop: 9, alignItems: 'center', flexWrap: 'wrap' }}>
+        {/* Scan metadata row */}
+        {(p.confidence || isToxic) && (
+          <div style={{ display: 'flex', gap: 5, marginTop: 5, flexWrap: 'wrap', alignItems: 'center' }}>
+            {p.confidence && (
+              <span style={{
+                fontSize: 10, fontWeight: 600, color: T.muted,
+                background: T.glassCard, border: T.glassCardBd,
+                borderRadius: T.rPill, padding: '2px 7px',
+              }}>
+                {p.confidence} match
+              </span>
+            )}
+            {isToxic && (
+              <span style={{
+                fontSize: 10, fontWeight: 600, color: T.danger,
+                background: T.dangerLight, border: `0.5px solid ${T.dangerBorder}`,
+                borderRadius: T.rPill, padding: '2px 7px',
+              }}>
+                ⚠️ Toxic
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Watering + light row */}
+        <div style={{ display: 'flex', gap: 6, marginTop: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           {wl && (
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -144,8 +175,15 @@ function PlantCard({ p, idx, userId, onRefresh }: {
           )}
 
           {p.light_level && (
-            <span style={{ fontSize: 13, color: T.muted }}>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 3,
+              fontSize: 11, color: T.muted,
+              background: T.glassCard, border: T.glassCardBd,
+              borderRadius: T.rPill, padding: '3px 8px',
+              whiteSpace: 'nowrap',
+            }}>
               {p.light_level === 'low' ? '🌥️' : p.light_level === 'medium' ? '⛅' : '☀️'}
+              {' '}{p.light_level} light
             </span>
           )}
         </div>
@@ -234,7 +272,7 @@ export default function PlantsPage() {
     try {
       const { data, error } = await supabase
         .from('plants')
-        .select('id, plant_name, nickname, scientific_name, image_urls, next_watering_due, last_watered, light_level, plant_health, plant_health_details, illustration_url, watering_frequency')
+        .select('id, plant_name, nickname, scientific_name, image_urls, next_watering_due, last_watered, light_level, plant_health, plant_health_details, illustration_url, watering_frequency, confidence, toxicity_info')
         .eq('user_id', uid)
         .order('next_watering_due', { ascending: true, nullsFirst: false });
       if (error) throw error;
