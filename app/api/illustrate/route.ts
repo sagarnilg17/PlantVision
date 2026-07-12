@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server';
+import { getServerUser } from '@/lib/supabaseServer';
 
 const PROMPT_SUFFIX =
   ', isolated on a pure white background, detailed natural leaves and stems, muted natural greens and earth tones, elegant fine-art watercolor style, no text, no labels, centered composition';
 
 export async function POST(req: Request) {
+  const user = await getServerUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const { speciesName } = await req.json();
+    if (typeof speciesName !== 'string' || speciesName.trim().length === 0 || speciesName.length > 120) {
+      return NextResponse.json({ error: 'Invalid species name' }, { status: 400 });
+    }
     const prompt = `Soft botanical watercolor illustration of ${speciesName}${PROMPT_SUFFIX}`;
 
     // Production: DALL-E 3 (set OPENAI_API_KEY in Vercel env)

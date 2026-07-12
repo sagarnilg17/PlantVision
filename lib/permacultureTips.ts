@@ -393,3 +393,109 @@ export function getPersonalizedTips(plants: PlantSummary[], count = 6): PermaTip
 
   return tips.slice(0, count);
 }
+
+// ─── Single-plant tips ─────────────────────────────────────────────────────────
+
+export type PlantTipInput = {
+  plant_name: string;
+  nickname: string | null;
+  light_level: string | null;
+  watering_frequency: string | null;
+  care_tips?: string[] | null;
+  toxicity_info?: string | null;
+};
+
+function parseToxicity(raw: string | null | undefined): { animals?: boolean; humans?: boolean; notes?: string } | null {
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
+/**
+ * Build a deck of tips that speak about ONE specific plant, drawn from its own
+ * light level, watering rhythm, toxicity and scan-generated care notes — plus a
+ * matching companion pairing from the library where one exists.
+ */
+export function getPlantTips(p: PlantTipInput, count = 6): PermaTip[] {
+  const name = p.nickname || p.plant_name;
+  const tips: PermaTip[] = [];
+
+  // 1. Light-specific placement advice
+  if (p.light_level) {
+    const byLight = {
+      low: {
+        icon: '🌥️', title: `Keep ${name} out of direct sun`,
+        body: `${name} does best in low, indirect light. A north-facing sill — or a few feet back from a brighter window — avoids scorched leaves.`,
+      },
+      medium: {
+        icon: '⛅', title: `Bright, indirect light suits ${name}`,
+        body: `Set ${name} near a filtered window and rotate the pot a quarter-turn each week, so it grows evenly instead of leaning toward the light.`,
+      },
+      bright: {
+        icon: '☀️', title: `Give ${name} plenty of light`,
+        body: `${name} loves bright light — a south or west aspect keeps growth compact. Too little light and it turns leggy and pale.`,
+      },
+    } as const;
+    const key = p.light_level === 'low' ? 'low' : p.light_level === 'medium' ? 'medium' : 'bright';
+    const m = byLight[key];
+    tips.push({ id: 'plant-light', type: 'principle', principleShort: 'Light',
+      icon: m.icon, title: m.title, body: m.body,
+      bg: '', border: '', labelColor: '#1D4ED8' });
+  }
+
+  // 2. Watering rhythm
+  const interval = parseInterval(p.watering_frequency);
+  tips.push({
+    id: 'plant-water', type: 'principle', principleShort: 'Watering', icon: '💧',
+    title: interval >= 10 ? `Let ${name} dry out` : `Keep ${name} evenly moist`,
+    body: interval >= 10
+      ? `${name} is drought-tolerant. Water about every ${interval} days and let the top few cm of soil dry fully first — over-watering is the main risk.`
+      : `${name} likes steady moisture. Check every ${interval} days and water once the top 2 cm feels dry; never leave it standing in a full saucer.`,
+    bg: '', border: '', labelColor: '#0E7490',
+  });
+
+  // 3. Safety, only when the species is toxic
+  const tox = parseToxicity(p.toxicity_info);
+  if (tox && (tox.animals || tox.humans)) {
+    const who = tox.animals && tox.humans ? 'pets and children' : tox.animals ? 'pets' : 'children';
+    tips.push({
+      id: 'plant-tox', type: 'principle', principleShort: 'Safety', icon: '⚠️',
+      title: `Keep ${name} away from ${who}`,
+      body: tox.notes?.trim()
+        || `${name} is toxic if chewed or eaten. Keep it on a high shelf or in a room your ${who} can't reach.`,
+      bg: '', border: '', labelColor: '#B91C1C',
+    });
+  }
+
+  // 4. Scan-generated care notes (already specific to this species)
+  const careTitles = ['Care note', 'Pro tip', 'Good to know'];
+  (p.care_tips ?? []).slice(0, 3).forEach((t, i) => {
+    if (!t?.trim()) return;
+    tips.push({
+      id: `plant-care-${i}`, type: 'principle', principleShort: careTitles[i] ?? 'Care note',
+      icon: ['🌿', '🪴', '✨'][i] ?? '🌿',
+      title: careTitles[i] ?? 'Care note', body: t.trim(),
+      bg: '', border: '', labelColor: '#166534',
+    });
+  });
+
+  // 5. Propagation, named for this plant
+  tips.push({
+    id: 'plant-propagate', type: 'principle', principleShort: 'Propagation', icon: '✂️',
+    title: `Grow more ${name}`,
+    body: `Snip a healthy stem just below a node and stand it in water. Most houseplants root in 2–3 weeks — a free new ${name} from the one you already have.`,
+    bg: '', border: '', labelColor: '#166534',
+  });
+
+  // 6. Matching companion pairing from the library, if the species appears in one
+  const first = p.plant_name.toLowerCase().split(' ')[0];
+  const companion = ALL_TIPS.find(t => t.type === 'companion'
+    && (t.plants ?? []).some(cp => {
+      const c = cp.toLowerCase();
+      return c.includes(first) || first.includes(c) || p.plant_name.toLowerCase().includes(c);
+    }));
+  if (companion) {
+    tips.push({ ...companion, id: 'plant-companion' });
+  }
+
+  return tips.slice(0, count);
+}

@@ -1,7 +1,10 @@
 import Groq from 'groq-sdk';
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerUser } from '@/lib/supabaseServer';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY ?? '' });
+
+const MAX_TOTAL_CHARS = 20_000_000; // ~15 MB of base64 image data
 
 // Species name is known at this point (from PlantNet via /api/vision).
 // This route examines ONLY visible stress and disease symptoms.
@@ -32,10 +35,15 @@ Rules:
 - Give 2-3 clarifyingQuestions a non-expert can answer.`;
 
 export async function POST(req: NextRequest) {
+  const user = await getServerUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const { images, speciesName } = await req.json();
-    if (!Array.isArray(images) || images.length === 0) {
+    if (!Array.isArray(images) || images.length === 0 || !images.every(i => typeof i === 'string')) {
       return NextResponse.json({ error: 'No images provided' }, { status: 400 });
+    }
+    if (images.reduce((n: number, s: string) => n + s.length, 0) > MAX_TOTAL_CHARS) {
+      return NextResponse.json({ error: 'Images too large' }, { status: 413 });
     }
 
     // Build vision message: images first, then the diagnosis prompt with species context

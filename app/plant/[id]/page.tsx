@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { computeWatering, nextWateringDate, type LightLevel } from '@/lib/careEngine';
 import { Nav } from '@/components/Nav';
 import { PermaTipsCarousel } from '@/components/PermaTipsCarousel';
+import { getPlantTips } from '@/lib/permacultureTips';
 import { T } from '@/lib/theme';
 
 const SPRING_UI   = { type: 'spring' as const, bounce: 0,    duration: 0.35 };
@@ -194,6 +195,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
         }}>
         <motion.button
           onClick={() => router.back()}
+          aria-label="Go back"
           whileTap={{ scale: 0.92 }} transition={SPRING_TAP}
           style={{
             width: 36, height: 36, borderRadius: '50%',
@@ -203,7 +205,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', flexShrink: 0, fontSize: 16, color: T.text,
           }}>
-          ←
+          <span aria-hidden="true">←</span>
         </motion.button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ margin: 0, fontSize: 17, fontWeight: 800, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: -0.3 }}>
@@ -213,6 +215,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
         </div>
         <motion.button
           onClick={openEdit}
+          aria-label="Edit plant"
           whileTap={{ scale: 0.92 }} transition={SPRING_TAP}
           style={{
             width: 36, height: 36, borderRadius: '50%',
@@ -221,7 +224,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', flexShrink: 0,
           }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.text} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.text} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
           </svg>
@@ -472,12 +475,15 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
           </motion.div>
         )}
 
-        {/* ── Gardening wisdom ── */}
+        {/* ── Gardening wisdom, specific to this plant ── */}
         <motion.div
           initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
           transition={{ ...SPRING_UI, delay: 0.22 }}>
-          <p style={{ margin: '0 0 12px 2px', fontSize: 14, fontWeight: 700, color: T.text }}>Gardening wisdom</p>
-          <PermaTipsCarousel />
+          <PermaTipsCarousel
+            tips={getPlantTips(plant, 6)}
+            heading={`Tips for ${plant.nickname || plant.plant_name}`}
+            subject={plant.nickname || plant.plant_name}
+          />
         </motion.div>
 
         {/* ── Remove plant ── */}

@@ -1,7 +1,12 @@
 import Groq from 'groq-sdk';
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerUser } from '@/lib/supabaseServer';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY ?? '' });
+
+// Cap total base64 payload (~15 MB) so the identify endpoint can't be used to
+// fan out huge requests to the paid PlantNet / Groq APIs.
+const MAX_TOTAL_CHARS = 20_000_000;
 
 const CARE_PROMPT = `You are a houseplant care expert. Given a species, return ONLY valid JSON — no extra text:
 
@@ -19,10 +24,15 @@ const CARE_PROMPT = `You are a houseplant care expert. Given a species, return O
 Use "Every X days" or "Every X-Y days" format for wateringFrequency. Be concise and practical.`;
 
 export async function POST(req: NextRequest) {
+  const user = await getServerUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const { images, organs } = await req.json();
-    if (!Array.isArray(images) || images.length === 0) {
+    if (!Array.isArray(images) || images.length === 0 || !images.every(i => typeof i === 'string')) {
       return NextResponse.json({ error: 'No images provided' }, { status: 400 });
+    }
+    if (images.reduce((n: number, s: string) => n + s.length, 0) > MAX_TOTAL_CHARS) {
+      return NextResponse.json({ error: 'Images too large' }, { status: 413 });
     }
 
     // 1. Build multipart body manually so each image part carries the correct

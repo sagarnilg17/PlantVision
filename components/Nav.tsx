@@ -88,6 +88,7 @@ function TabButton({ label, active, onClick, children }: {
       onClick={onClick}
       whileTap={{ scale: 0.86 }}
       transition={SPRING_TAP}
+      aria-current={active ? 'page' : undefined}
       style={{
         flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         gap: 4, padding: '10px 0',
@@ -214,6 +215,7 @@ export function Nav() {
 
       {/* ── Bottom navigation bar — spring entrance ── */}
       <motion.nav
+        aria-label="Primary"
         initial={{ y: 16, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={SPRING_NAV}

@@ -8,6 +8,15 @@ import {
 import { T } from '@/lib/theme';
 import { getPersonalizedTips, type PermaTip, type PlantSummary } from '@/lib/permacultureTips';
 
+// Convert a hex accent to a translucent rgba tint for on-glass chips
+function tint(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 const SPRING        = { type: 'spring' as const, bounce: 0,    duration: 0.35 };
 const SPRING_BOUNCE = { type: 'spring' as const, bounce: 0.18, duration: 0.42 };;
 const STACK_VISIBLE = 3;
@@ -16,38 +25,40 @@ const STACK_VISIBLE = 3;
 
 function CardFace({ tip, stackIndex }: { tip: PermaTip; stackIndex: number }) {
   const isTop = stackIndex === 0;
+  const accent = tip.labelColor;
+  const category = tip.type === 'companion' ? 'Companions' : (tip.principleShort ?? 'Tip');
   return (
     <div style={{
-      background: tip.bg,
-      border: `1.5px solid ${tip.border}`,
-      borderRadius: T.rLg,           // M3 large shape = 28px
+      background: T.glassCard,
+      border: T.glassCardBd,
+      borderRadius: T.rLg,
       padding: 20,
       height: 174,
       display: 'flex',
       flexDirection: 'column',
       gap: 10,
       overflow: 'hidden',
-      boxShadow: isTop
-        ? '0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.05)'
-        : '0 2px 8px rgba(0,0,0,0.04)',
+      boxShadow: isTop ? T.glassPanelSh : T.glassCardSh,
       transition: 'box-shadow 0.2s',
     }}>
 
       {/* Label + icon row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <span style={{
-          fontSize: 10, fontWeight: 800,
-          color: tip.labelColor,
-          textTransform: 'uppercase', letterSpacing: 0.8,
-          background: 'rgba(255,255,255,0.55)',
-          borderRadius: 8, padding: '3px 8px',
-          flexShrink: 0,
+          fontSize: 11, fontWeight: 700,
+          color: accent,
+          background: tint(accent, 0.10),
+          borderRadius: T.rPill, padding: '3px 10px',
+          flexShrink: 0, whiteSpace: 'nowrap',
         }}>
-          {tip.type === 'companion'
-            ? '🤝 Companions'
-            : `P${tip.principle} · ${tip.principleShort}`}
+          {category}
         </span>
-        <span style={{ fontSize: 22, lineHeight: 1, flexShrink: 0 }}>{tip.icon}</span>
+        <span style={{
+          fontSize: 18, lineHeight: 1, flexShrink: 0,
+          width: 34, height: 34, borderRadius: '50%',
+          background: tint(accent, 0.10),
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>{tip.icon}</span>
       </div>
 
       {/* Title */}
@@ -75,10 +86,10 @@ function CardFace({ tip, stackIndex }: { tip: PermaTip; stackIndex: number }) {
         <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
           {tip.plants.slice(0, 3).map(p => (
             <span key={p} style={{
-              fontSize: 10, fontWeight: 700, color: tip.labelColor,
-              background: 'rgba(255,255,255,0.7)',
-              border: `1px solid ${tip.border}`,
-              borderRadius: 50, padding: '2px 9px',
+              fontSize: 10, fontWeight: 700, color: accent,
+              background: tint(accent, 0.10),
+              border: `1px solid ${tint(accent, 0.22)}`,
+              borderRadius: T.rPill, padding: '2px 9px',
             }}>{p}</span>
           ))}
         </div>
@@ -157,14 +168,29 @@ function SwipeCard({
 
 // ─── Main carousel ─────────────────────────────────────────────────────────────
 
-export function PermaTipsCarousel({ plants }: { plants?: PlantSummary[] }) {
-  const allTips = useMemo(() => getPersonalizedTips(plants ?? [], 8), [plants]);
+export function PermaTipsCarousel({
+  plants, tips, heading, subject,
+}: {
+  plants?: PlantSummary[];
+  /** Explicit tip deck — overrides the plants-derived tips (e.g. single-plant tips) */
+  tips?: PermaTip[];
+  /** Custom header title */
+  heading?: string;
+  /** Short subject shown in the count badge (e.g. a plant's name) */
+  subject?: string;
+}) {
+  const allTips = useMemo(
+    () => tips ?? getPersonalizedTips(plants ?? [], 8),
+    [tips, plants],
+  );
   const [topIdx, setTopIdx] = useState(0);
 
   const remaining   = allTips.length - topIdx;
   const visibleTips = allTips.slice(topIdx, topIdx + STACK_VISIBLE);
   const today       = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const isPersonalized = (plants?.length ?? 0) >= 2;
+  const headerTitle  = heading ?? (isPersonalized ? 'Tips for Your Garden' : 'Daily Wisdom');
+  const badgeText    = subject ?? (isPersonalized ? `${plants!.length} plants` : today);
 
   const handleDismiss = () => setTopIdx(i => Math.min(i + 1, allTips.length));
   const handleReset   = () => setTopIdx(0);
@@ -176,7 +202,7 @@ export function PermaTipsCarousel({ plants }: { plants?: PlantSummary[] }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
           <p style={{ margin: 0, fontSize: 14, color: T.text, fontWeight: 700, letterSpacing: -0.1 }}>
-            {isPersonalized ? 'Tips for Your Garden' : 'Daily Wisdom'}
+            {headerTitle}
           </p>
           <p style={{ margin: '2px 0 0', fontSize: 11, color: T.muted }}>
             {remaining > 0
@@ -199,7 +225,7 @@ export function PermaTipsCarousel({ plants }: { plants?: PlantSummary[] }) {
                 borderRadius: 50, padding: '4px 10px', whiteSpace: 'nowrap',
               }}
             >
-              {isPersonalized ? `${plants!.length} plants` : today}
+              {badgeText}
             </motion.span>
           ) : (
             <motion.button

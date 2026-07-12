@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
+import { LocationPicker, type PickedLocation } from '@/components/LocationPicker';
 import { T } from '@/lib/theme';
 
 const SPRING_UI  = { type: 'spring' as const, bounce: 0,    duration: 0.35 };
@@ -27,7 +28,7 @@ export default function OnboardingPage() {
   const [step,      setStep]      = useState(0);
   const [direction, setDirection] = useState(1);
   const [name,      setName]      = useState('');
-  const [location,  setLocation]  = useState('');
+  const [loc,       setLoc]       = useState<PickedLocation | null>(null);
   const [expertise, setExpertise] = useState<string | null>(null);
   const [saving,    setSaving]    = useState(false);
 
@@ -50,7 +51,9 @@ export default function OnboardingPage() {
     await supabase.auth.updateUser({
       data: {
         full_name:       name.trim() || undefined,
-        location:        location.trim() || undefined,
+        location:        loc?.place || undefined,
+        lat:             loc?.lat ?? undefined,
+        lng:             loc?.lng ?? undefined,
         expertise,
         onboarding_done: true,
       },
@@ -141,22 +144,9 @@ export default function OnboardingPage() {
         </p>
       </div>
 
-      <input
-        type="text"
-        placeholder="City, Country (e.g. Mumbai, India)"
-        value={location}
-        onChange={e => setLocation(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter') next(); }}
-        autoFocus
-        style={{
-          width: '100%', boxSizing: 'border-box',
-          padding: '15px 18px',
-          background: T.glassCard, border: T.glassCardBd,
-          boxShadow: T.glassCardSh,
-          borderRadius: T.rSm, fontSize: 16, color: T.text,
-          outline: 'none', marginBottom: 14,
-        }}
-      />
+      <div style={{ marginBottom: 16 }}>
+        <LocationPicker value={loc} onChange={setLoc} />
+      </div>
 
       <motion.button
         onClick={next}
@@ -169,7 +159,7 @@ export default function OnboardingPage() {
           boxShadow: '0 4px 16px rgba(46,125,50,0.30)',
           marginBottom: 10,
         }}>
-        Continue →
+        {loc ? 'Continue →' : 'Skip location →'}
       </motion.button>
 
       <div style={{ display: 'flex', gap: 10 }}>
