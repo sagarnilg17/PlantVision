@@ -204,9 +204,9 @@ export function PermaTipsCarousel({
         ))}
       </div>
 
-      {/* ── Page dots ── */}
+      {/* ── Page dots (transform-only, no layout animation) ── */}
       {allTips.length > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginTop: 2 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 3, marginTop: 2 }}>
           {allTips.map((_, i) => (
             <button
               key={i}
@@ -214,13 +214,18 @@ export function PermaTipsCarousel({
               aria-label={`Go to tip ${i + 1}`}
               aria-current={i === active ? 'true' : undefined}
               style={{
-                width: i === active ? 20 : 6, height: 6,
-                padding: 0, border: 'none', cursor: 'pointer',
-                borderRadius: 3,
-                background: i === active ? T.green : T.border,
-                transition: 'width 0.22s ease, background 0.22s ease',
-              }}
-            />
+                padding: 6, border: 'none', background: 'none',
+                cursor: 'pointer', lineHeight: 0,
+              }}>
+              <motion.span
+                animate={{
+                  scale: i === active ? 1.35 : 1,
+                  backgroundColor: i === active ? T.green : T.borderMid,
+                }}
+                transition={{ duration: 0.22 }}
+                style={{ display: 'block', width: 7, height: 7, borderRadius: '50%' }}
+              />
+            </button>
           ))}
         </div>
       )}

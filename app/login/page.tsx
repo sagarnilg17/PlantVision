@@ -157,7 +157,7 @@ export default function LoginPage() {
               <div style={{ flex: 1, height: 1, background: T.border }} />
             </div>
 
-            <label htmlFor="login-email" style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6, display: 'block' }}>
+            <label htmlFor="login-email" style={{ fontSize: 13, fontWeight: 600, color: T.sub, marginBottom: 8, display: 'block' }}>
               Email address
             </label>
             <input
@@ -167,8 +167,8 @@ export default function LoginPage() {
               onKeyDown={e => e.key === 'Enter' && canSubmitEmail && sendOtp()}
               style={{
                 width: '100%', padding: '14px 16px', fontSize: 16,
-                borderRadius: T.rSm, border: `1.5px solid ${T.border}`,
-                background: T.bg, color: T.text, outline: 'none',
+                borderRadius: T.rSm, border: T.glassCardBd, boxShadow: T.glassCardSh,
+                background: T.glassCard, color: T.text, outline: 'none',
                 marginBottom: 16, display: 'block',
               }}
             />
@@ -186,7 +186,7 @@ export default function LoginPage() {
           </>
         ) : (
           <>
-            <label htmlFor="login-otp" style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6, display: 'block' }}>
+            <label htmlFor="login-otp" style={{ fontSize: 13, fontWeight: 600, color: T.sub, marginBottom: 8, display: 'block' }}>
               6-digit code
             </label>
             <input
@@ -196,8 +196,8 @@ export default function LoginPage() {
               onKeyDown={e => e.key === 'Enter' && canSubmitOtp && verifyOtp()}
               style={{
                 width: '100%', padding: '14px 16px', fontSize: 24, letterSpacing: 10,
-                borderRadius: T.rSm, border: `1.5px solid ${T.border}`,
-                background: T.bg, color: T.text, outline: 'none',
+                borderRadius: T.rSm, border: T.glassCardBd, boxShadow: T.glassCardSh,
+                background: T.glassCard, color: T.text, outline: 'none',
                 marginBottom: 16, display: 'block', textAlign: 'center',
               }}
             />

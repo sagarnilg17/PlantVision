@@ -8,6 +8,7 @@ import { computeWatering, nextWateringDate, type LightLevel } from '@/lib/careEn
 import { Nav } from '@/components/Nav';
 import { InstallBanner } from '@/components/InstallBanner';
 import { PermaTipsCarousel } from '@/components/PermaTipsCarousel';
+import { Snackbar, type SnackState } from '@/components/Snackbar';
 import { T } from '@/lib/theme';
 
 const SPRING_UI  = { type: 'spring' as const, bounce: 0, duration: 0.35 };
@@ -17,6 +18,7 @@ type Plant = {
   id: string; plant_name: string; nickname: string | null;
   scientific_name: string | null;
   image_urls: string[]; next_watering_due: string | null;
+  last_watered: string | null;
   light_level: string | null; plant_health: string | null;
   plant_health_details: string | null;
   illustration_url: string | null;
@@ -64,8 +66,9 @@ function PlantAvatar({ plant, size = 48 }: { plant: Plant; size?: number }) {
   );
 }
 
-function AttentionCard({ p, idx, userId, onRefresh }: {
+function AttentionCard({ p, idx, userId, onRefresh, onSnack }: {
   p: Plant; idx: number; userId: string; onRefresh: () => void;
+  onSnack: (s: { message: string; onUndo?: () => void }) => void;
 }) {
   const router = useRouter();
   const [watering, setWatering] = useState(false);
@@ -90,9 +93,23 @@ function AttentionCard({ p, idx, userId, onRefresh }: {
       const engine = computeWatering({ baseWateringFrequency: p.watering_frequency, light: (p.light_level as LightLevel) ?? null, lat: null });
       const today  = new Date().toISOString().slice(0, 10);
       const due    = nextWateringDate(today, engine.intervalDays);
-      await supabase.from('care_log').insert({ plant_id: p.id, user_id: userId, action: 'watered' });
+      // Capture the prior schedule + the log row so a mis-tap is fully reversible
+      const prevWatered = p.last_watered;
+      const prevDue     = p.next_watering_due;
+      const { data: row } = await supabase
+        .from('care_log').insert({ plant_id: p.id, user_id: userId, action: 'watered' })
+        .select('id').single();
       await supabase.from('plants').update({ last_watered: today, next_watering_due: due }).eq('id', p.id);
       setWatered(true);
+      onSnack({
+        message: `💧 ${p.nickname || p.plant_name} watered`,
+        onUndo: async () => {
+          if (row?.id) await supabase.from('care_log').delete().eq('id', row.id);
+          await supabase.from('plants').update({ last_watered: prevWatered, next_watering_due: prevDue }).eq('id', p.id);
+          setWatered(false);
+          onRefresh();
+        },
+      });
       setTimeout(() => { setWatered(false); onRefresh(); }, 1400);
     } catch { /* best effort */ }
     finally { setWatering(false); }
@@ -190,13 +207,14 @@ export default function Dashboard() {
   const [name,      setName]      = useState('');
   const [userId,    setUserId]    = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [snack,     setSnack]     = useState<SnackState>(null);
 
   const load = useCallback(async (uid: string) => {
     setLoadError(false);
     try {
       const { data, error } = await supabase
         .from('plants')
-        .select('id, plant_name, nickname, scientific_name, image_urls, next_watering_due, light_level, plant_health, plant_health_details, illustration_url, watering_frequency')
+        .select('id, plant_name, nickname, scientific_name, image_urls, next_watering_due, last_watered, light_level, plant_health, plant_health_details, illustration_url, watering_frequency')
         .eq('user_id', uid)
         .order('next_watering_due', { ascending: true });
       if (error) throw error;
@@ -320,6 +338,7 @@ export default function Dashboard() {
                   key={p.id} p={p} idx={idx}
                   userId={userId as string}
                   onRefresh={() => userId && load(userId)}
+                  onSnack={setSnack}
                 />
               ))}
             </AnimatePresence>
@@ -404,6 +423,7 @@ export default function Dashboard() {
         )}
       </div>
 
+      <Snackbar snack={snack} onDismiss={() => setSnack(null)} />
       <Nav />
     </main>
   );

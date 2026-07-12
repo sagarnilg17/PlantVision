@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { computeWatering, nextWateringDate, type LightLevel } from '@/lib/careEngine';
 import { Nav } from '@/components/Nav';
 import { PermaTipsCarousel } from '@/components/PermaTipsCarousel';
+import { Snackbar, type SnackState } from '@/components/Snackbar';
 import { getPlantTips } from '@/lib/permacultureTips';
 import { T } from '@/lib/theme';
 
@@ -91,6 +92,7 @@ export default function PlantDetail() {
 
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting,      setDeleting]      = useState(false);
+  const [snack,         setSnack]         = useState<SnackState>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -147,8 +149,12 @@ export default function PlantDetail() {
     if (!plant || !id) return;
     setBusy(true);
     const { data: u } = await supabase.auth.getUser();
-    if (!u.user) return;
-    await supabase.from('care_log').insert({ plant_id: id, user_id: u.user.id, action });
+    if (!u.user) { setBusy(false); return; }
+    const prevWatered = plant.last_watered;
+    const prevDue     = plant.next_watering_due;
+    const { data: row } = await supabase
+      .from('care_log').insert({ plant_id: id, user_id: u.user.id, action })
+      .select('id').single();
     if (action === 'watered') {
       const engine = computeWatering({ baseWateringFrequency: plant.watering_frequency, light: (plant.light_level as LightLevel) ?? null, lat: null });
       const today = new Date().toISOString().slice(0, 10);
@@ -156,6 +162,17 @@ export default function PlantDetail() {
     }
     await load();
     setBusy(false);
+    const label = LOG_META[action]?.label ?? 'Logged';
+    setSnack({
+      message: `${LOG_META[action]?.icon ?? '✓'} ${label}`,
+      onUndo: async () => {
+        if (row?.id) await supabase.from('care_log').delete().eq('id', row.id);
+        if (action === 'watered') {
+          await supabase.from('plants').update({ last_watered: prevWatered, next_watering_due: prevDue }).eq('id', id);
+        }
+        await load();
+      },
+    });
   };
 
   if (!plant) {
@@ -297,14 +314,14 @@ export default function PlantDetail() {
 
       <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-        {/* ── Watering status ── */}
+        {/* ── Watering status — the page's primary anchor ── */}
         <GlassCard delay={0.06} style={{
           background: overdue ? T.amberLight : T.greenLight,
           border: `1px solid ${overdue ? T.amberBorder : T.greenMid}`,
-          padding: 16,
+          padding: 20,
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: overdue ? T.amberText : T.greenDark }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+            <p style={{ margin: 0, fontSize: 20, fontWeight: 800, letterSpacing: -0.4, lineHeight: 1.2, color: overdue ? T.amberText : T.greenDark }}>
               {d === null ? 'No watering schedule yet' : d <= 0 ? '💧 Needs water today' : `💧 Next water in ${d} day${d !== 1 ? 's' : ''}`}
             </p>
             {plant.watering_frequency && (
@@ -408,51 +425,48 @@ export default function PlantDetail() {
           Re-scan &amp; update health
         </motion.button>
 
-        {/* ── Activity log ── */}
-        {logs.length > 0 && (
+        {/* ── History: growth photos + care log, grouped ── */}
+        {(logs.length > 0 || checkins.length > 0) && (
           <motion.div
             initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
             transition={{ ...SPRING_UI, delay: 0.18 }}>
-            <p style={{ margin: '0 0 10px 2px', fontSize: 14, fontWeight: 700, color: T.text }}>Recent activity</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {logs.map(l => {
-                const meta = LOG_META[l.action] ?? { icon: '•', label: l.action };
-                return (
-                  <div key={l.id} style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '10px 14px',
-                    background: T.glassCard, border: T.glassCardBd, boxShadow: T.glassCardSh,
-                    borderRadius: T.rSm,
-                  }}>
-                    <span style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>{meta.icon} {meta.label}</span>
-                    <span style={{ fontSize: 12, color: T.muted }}>
-                      {new Date(l.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
+            <p style={{ margin: '0 0 10px 2px', fontSize: 14, fontWeight: 700, color: T.text }}>History</p>
 
-        {/* ── Growth timeline ── */}
-        {checkins.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-            transition={{ ...SPRING_UI, delay: 0.20 }}>
-            <p style={{ margin: '0 0 10px 2px', fontSize: 14, fontWeight: 700, color: T.text }}>Growth timeline</p>
-            <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
-              {checkins.map(ci => (
-                <div key={ci.id} style={{ flexShrink: 0, width: 88 }}>
-                  <div style={{ width: 88, height: 88, borderRadius: T.rSm, overflow: 'hidden', border: T.glassCardBd, boxShadow: T.glassCardSh }}>
-                    <img src={ci.image_urls?.[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            {checkins.length > 0 && (
+              <div style={{ display: 'flex', gap: 10, overflowX: 'auto', padding: '2px 2px 12px' }}>
+                {checkins.map(ci => (
+                  <div key={ci.id} style={{ flexShrink: 0, width: 88 }}>
+                    <div style={{ width: 88, height: 88, borderRadius: T.rSm, overflow: 'hidden', border: T.glassCardBd, boxShadow: T.glassCardSh }}>
+                      <img src={ci.image_urls?.[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                    <p style={{ margin: '5px 0 0', fontSize: 10, color: T.muted, textAlign: 'center' }}>
+                      {new Date(ci.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </p>
                   </div>
-                  <p style={{ margin: '5px 0 0', fontSize: 10, color: T.muted, textAlign: 'center' }}>
-                    {new Date(ci.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
+
+            {logs.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {logs.map(l => {
+                  const meta = LOG_META[l.action] ?? { icon: '•', label: l.action };
+                  return (
+                    <div key={l.id} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '10px 14px',
+                      background: T.glassCard, border: T.glassCardBd, boxShadow: T.glassCardSh,
+                      borderRadius: T.rSm,
+                    }}>
+                      <span style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>{meta.icon} {meta.label}</span>
+                      <span style={{ fontSize: 12, color: T.muted }}>
+                        {new Date(l.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -493,7 +507,7 @@ export default function PlantDetail() {
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.18 }}
               onClick={() => setEditOpen(false)}
-              style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.40)' }}
+              style={{ position: 'fixed', inset: 0, zIndex: 200, background: T.scrimDark }}
             />
             <motion.div
               initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
@@ -577,7 +591,7 @@ export default function PlantDetail() {
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.18 }}
               onClick={() => setDeleteConfirm(false)}
-              style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.40)' }}
+              style={{ position: 'fixed', inset: 0, zIndex: 200, background: T.scrimDark }}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.92, y: 12 }}
@@ -649,6 +663,7 @@ export default function PlantDetail() {
         )}
       </AnimatePresence>
 
+      <Snackbar snack={snack} onDismiss={() => setSnack(null)} />
       <Nav />
     </main>
   );
