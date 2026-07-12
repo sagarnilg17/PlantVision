@@ -393,15 +393,12 @@ export default function Dashboard() {
               </motion.button>
             </motion.div>
 
-            {/* ── Tips ── */}
+            {/* ── Tips (mixed across all the user's plants) ── */}
             <motion.div
               initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
               transition={{ ...SPRING_UI, delay: 0.18 }}
               style={{ marginTop: 30 }}>
-              <p style={{ margin: '0 0 12px 2px', fontSize: 14, fontWeight: 700, color: T.text }}>
-                Garden wisdom
-              </p>
-              <PermaTipsCarousel />
+              <PermaTipsCarousel plants={plants} />
             </motion.div>
           </>
         )}

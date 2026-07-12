@@ -408,32 +408,6 @@ export default function PlantDetail() {
           Re-scan &amp; update health
         </motion.button>
 
-        {/* ── Care tips ── */}
-        {plant.care_tips?.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-            transition={{ ...SPRING_UI, delay: 0.16 }}>
-            <p style={{ margin: '0 0 12px 2px', fontSize: 14, fontWeight: 700, color: T.text }}>
-              Care tips for {plant.nickname || plant.plant_name}
-            </p>
-            <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
-              {plant.care_tips.map((tip, i) => (
-                <div key={i} style={{
-                  flexShrink: 0, width: 200,
-                  background: T.glassCard, border: T.glassCardBd,
-                  boxShadow: T.glassCardSh,
-                  borderRadius: T.rSm, padding: '14px 16px',
-                }}>
-                  <span style={{ fontSize: 20, display: 'block', marginBottom: 8 }}>
-                    {i === 0 ? '🌿' : i === 1 ? '💡' : i === 2 ? '🪴' : i === 3 ? '☀️' : '✨'}
-                  </span>
-                  <p style={{ margin: 0, fontSize: 13, color: T.text, lineHeight: 1.55 }}>{tip}</p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
         {/* ── Activity log ── */}
         {logs.length > 0 && (
           <motion.div

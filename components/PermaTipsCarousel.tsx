@@ -177,10 +177,15 @@ export function PermaTipsCarousel({
           display: 'flex',
           gap: GAP,
           overflowX: 'auto',
+          overflowY: 'visible',
           scrollSnapType: 'x mandatory',
-          scrollPaddingInline: 2,
-          paddingInline: 2,
-          paddingBottom: 4,
+          scrollPaddingInline: 12,
+          // Interior padding gives the cards' soft shadows room inside the scroll
+          // viewport — without it, overflow-x clips them and the row reads as a
+          // filled box rather than floating cards.
+          paddingInline: 12,
+          paddingTop: 10,
+          paddingBottom: 20,
           WebkitOverflowScrolling: 'touch',
         }}>
         {allTips.map((tip, i) => (
@@ -201,7 +206,7 @@ export function PermaTipsCarousel({
 
       {/* ── Page dots ── */}
       {allTips.length > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginTop: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginTop: 2 }}>
           {allTips.map((_, i) => (
             <button
               key={i}
