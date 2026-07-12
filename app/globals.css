@@ -37,6 +37,10 @@ button, input, textarea { font-family: inherit; }
   }
 }
 
+/* Hide scrollbars on horizontal scroll-snap pagers (still scrollable) */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }

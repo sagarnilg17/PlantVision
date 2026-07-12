@@ -7,11 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "build:android": "node scripts/build-capacitor.mjs",
     "cap:sync": "cap sync android",
     "cap:open": "cap open android"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/browser": "^8.0.3",
     "@capacitor/core": "^8.4.1",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",

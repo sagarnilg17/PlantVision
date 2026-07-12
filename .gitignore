@@ -47,3 +47,7 @@ next-env.d.ts
 *.keystore
 *.jks
 android/keystore.properties
+
+# static export bundle + capacitor build temp
+/out/
+.cap-relocate/

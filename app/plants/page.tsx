@@ -1,7 +1,5 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -102,10 +100,10 @@ function PlantCard({ p, idx, userId, onRefresh }: {
 
   return (
     <motion.div
-      onClick={() => router.push(`/plant/${p.id}`)}
+      onClick={() => router.push(`/plant?id=${p.id}`)}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/plant/${p.id}`); } }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/plant?id=${p.id}`); } }}
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.15 } }}

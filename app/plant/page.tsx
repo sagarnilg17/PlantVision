@@ -1,8 +1,6 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
-import { useState, useEffect, useCallback, use } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
@@ -71,9 +69,15 @@ function GlassCard({ children, delay = 0, style }: {
   );
 }
 
-export default function PlantDetail({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function PlantDetail() {
   const router  = useRouter();
+
+  // Route is /plant?id=… (query param, not a dynamic segment) so the page
+  // static-exports as a single client shell that reads the id after mount.
+  const [id, setId] = useState<string | null>(null);
+  useEffect(() => {
+    setId(new URLSearchParams(window.location.search).get('id'));
+  }, []);
 
   const [plant,    setPlant]    = useState<Plant | null>(null);
   const [logs,     setLogs]     = useState<CareLog[]>([]);
@@ -89,6 +93,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
   const [deleting,      setDeleting]      = useState(false);
 
   const load = useCallback(async () => {
+    if (!id) return;
     const { data: p } = await supabase.from('plants').select('*').eq('id', id).single();
     if (p) setPlant(p as Plant);
     const { data: l } = await supabase.from('care_log').select('id, action, created_at').eq('plant_id', id).order('created_at', { ascending: false }).limit(10);
@@ -98,10 +103,11 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
   }, [id]);
 
   useEffect(() => {
+    if (!id) return;
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) router.push('/login'); else load();
     });
-  }, [router, load]);
+  }, [id, router, load]);
 
   const openEdit = () => {
     if (!plant) return;
@@ -111,7 +117,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
   };
 
   const saveEdit = async () => {
-    if (!plant || saving) return;
+    if (!plant || !id || saving) return;
     setSaving(true);
     const updates: Record<string, unknown> = {
       nickname: editNickname.trim() || null,
@@ -129,6 +135,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
   };
 
   const deletePlant = async () => {
+    if (!id) return;
     setDeleting(true);
     await supabase.from('care_log').delete().eq('plant_id', id);
     await supabase.from('checkins').delete().eq('plant_id', id);
@@ -137,7 +144,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
   };
 
   const logAction = async (action: string) => {
-    if (!plant) return;
+    if (!plant || !id) return;
     setBusy(true);
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;

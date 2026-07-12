@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { NATIVE_OAUTH_REDIRECT } from '@/components/NativeAuthBridge';
 import { T } from '@/lib/theme';
 
 function PlantMark() {
@@ -32,6 +33,26 @@ export default function LoginPage() {
 
   const signInWithGoogle = async () => {
     setLoading(true); setError(null);
+
+    const { Capacitor } = await import('@capacitor/core');
+    if (Capacitor.isNativePlatform()) {
+      // Native: open the OAuth page in the system browser and return via deep link.
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: NATIVE_OAUTH_REDIRECT, skipBrowserRedirect: true },
+      });
+      if (error || !data?.url) {
+        setError(error?.message ?? 'Could not start Google sign-in');
+        setLoading(false);
+        return;
+      }
+      const { Browser } = await import('@capacitor/browser');
+      await Browser.open({ url: data.url });
+      // Session completes in NativeAuthBridge via the appUrlOpen deep link.
+      return;
+    }
+
+    // Web: redirect to the /auth/callback route handler.
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/auth/callback` },

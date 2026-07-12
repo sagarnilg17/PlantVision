@@ -9,10 +9,21 @@ const securityHeaders = [
   { key: "Permissions-Policy", value: "camera=(self), geolocation=(self), microphone=(), payment=()" },
 ];
 
-const nextConfig: NextConfig = {
-  async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
-  },
-};
+// The Capacitor build sets BUILD_TARGET=static to emit a static `out/` bundle for
+// the native app. That mode can't run route handlers or apply headers() — those
+// only exist on the Vercel-deployed web build, which the native app calls by URL.
+const isStatic = process.env.BUILD_TARGET === "static";
+
+const nextConfig: NextConfig = isStatic
+  ? {
+      output: "export",
+      trailingSlash: true,
+      images: { unoptimized: true },
+    }
+  : {
+      async headers() {
+        return [{ source: "/:path*", headers: securityHeaders }];
+      },
+    };
 
 export default nextConfig;

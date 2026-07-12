@@ -1,12 +1,11 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { computeWatering, nextWateringDate, type LightLevel } from '@/lib/careEngine';
 import { DiagnosisCard, type Diagnosis } from '@/components/DiagnosisCard';
+import { apiFetch } from '@/lib/api';
 import { Nav } from '@/components/Nav';
 import { T } from '@/lib/theme';
 
@@ -134,12 +133,12 @@ export default function ScanPage() {
     if (shots.length < 3) return;
     setLoading(true); setError(null);
     try {
-      const res  = await fetch('/api/vision', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ images: shots, organs: ANGLES.map(a => a.organ) }) });
+      const res  = await apiFetch('/api/vision', { images: shots, organs: ANGLES.map(a => a.organ) });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setAnalysis(data); setChosenIdx(0);
       try {
-        const dRes  = await fetch('/api/diagnose', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ images: shots, speciesName: data.topMatch?.commonName }) });
+        const dRes  = await apiFetch('/api/diagnose', { images: shots, speciesName: data.topMatch?.commonName });
         const dData = await dRes.json();
         if (!dData.error && dData.diagnosis) setDiagnosis(dData.diagnosis);
       } catch { /* diagnosis is best-effort */ }
@@ -166,7 +165,7 @@ export default function ScanPage() {
       // Generate botanical illustration (best-effort — plant still saves if this fails)
       let illustrationUrl: string | null = null;
       try {
-        const illRes  = await fetch('/api/illustrate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ speciesName: chosen.commonName }) });
+        const illRes  = await apiFetch('/api/illustrate', { speciesName: chosen.commonName });
         const illData = await illRes.json();
         if (illData.url) {
           // Download the generated image and re-upload to Supabase for permanent storage

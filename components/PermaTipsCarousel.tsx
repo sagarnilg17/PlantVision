@@ -1,12 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import {
-  motion, AnimatePresence,
-  useMotionValue, useTransform,
-} from 'framer-motion';
+import { useMemo, useRef, useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { T } from '@/lib/theme';
 import { getPersonalizedTips, type PermaTip, type PlantSummary } from '@/lib/permacultureTips';
+
+const SPRING = { type: 'spring' as const, bounce: 0, duration: 0.35 };
+const GAP = 12;
 
 // Convert a hex accent to a translucent rgba tint for on-glass chips
 function tint(hex: string, alpha: number): string {
@@ -17,29 +17,26 @@ function tint(hex: string, alpha: number): string {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-const SPRING        = { type: 'spring' as const, bounce: 0,    duration: 0.35 };
-const SPRING_BOUNCE = { type: 'spring' as const, bounce: 0.18, duration: 0.42 };;
-const STACK_VISIBLE = 3;
-
 // ─── Card face ────────────────────────────────────────────────────────────────
+// Cards no longer overlap (scroll-snap pager), so each sits directly on the page
+// background. A near-opaque fill keeps text crisp; the "glass" read comes from the
+// inset highlight + shadow, not the alpha.
 
-function CardFace({ tip, stackIndex }: { tip: PermaTip; stackIndex: number }) {
-  const isTop = stackIndex === 0;
+function CardFace({ tip }: { tip: PermaTip }) {
   const accent = tip.labelColor;
   const category = tip.type === 'companion' ? 'Companions' : (tip.principleShort ?? 'Tip');
   return (
     <div style={{
-      background: T.glassCard,
+      background: 'rgba(255,255,255,0.94)',
       border: T.glassCardBd,
       borderRadius: T.rLg,
       padding: 20,
-      height: 174,
+      height: 176,
       display: 'flex',
       flexDirection: 'column',
       gap: 10,
       overflow: 'hidden',
-      boxShadow: isTop ? T.glassPanelSh : T.glassCardSh,
-      transition: 'box-shadow 0.2s',
+      boxShadow: T.glassCardSh,
     }}>
 
       {/* Label + icon row */}
@@ -58,7 +55,7 @@ function CardFace({ tip, stackIndex }: { tip: PermaTip; stackIndex: number }) {
           width: 34, height: 34, borderRadius: '50%',
           background: tint(accent, 0.10),
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>{tip.icon}</span>
+        }} aria-hidden="true">{tip.icon}</span>
       </div>
 
       {/* Title */}
@@ -98,75 +95,7 @@ function CardFace({ tip, stackIndex }: { tip: PermaTip; stackIndex: number }) {
   );
 }
 
-// ─── Single swipeable card ─────────────────────────────────────────────────────
-
-function SwipeCard({
-  tip, stackIndex, onDismiss,
-}: {
-  tip: PermaTip;
-  stackIndex: number;
-  onDismiss: (() => void) | undefined;
-}) {
-  const isTop = stackIndex === 0;
-
-  // Spring physics for drag feedback
-  const x       = useMotionValue(0);
-  const rotate  = useTransform(x, [-200, 200], [-15, 15]);
-  const opacity = useTransform(x, [-160, -80, 0, 80, 160], [0, 1, 1, 1, 0]);
-
-  // Stack position: front card sits highest, back cards are scaled + shifted down
-  const scale   = 1 - stackIndex * 0.048;
-  const yOffset = stackIndex * 12;
-  const zIndex  = STACK_VISIBLE - stackIndex + 1;
-
-  // Swipe direction hint colours (shown at extremes of drag)
-  const leftHint  = useTransform(x, [-120, -40], [1, 0]);
-  const rightHint = useTransform(x, [40, 120], [0, 1]);
-
-  return (
-    <motion.div
-      drag={isTop ? 'x' : false}
-      dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={0.92}
-      onDragEnd={(_, info) => {
-        if (isTop && Math.abs(info.offset.x) > 80) onDismiss?.();
-      }}
-      initial={{ scale: scale * 0.95, y: yOffset + 22, opacity: 0 }}
-      animate={{ scale, y: yOffset, opacity: 1, zIndex }}
-      exit={{ x: 380, rotate: 24, opacity: 0, transition: { duration: 0.28, ease: [0.43, 0.13, 0.23, 0.96] } }}
-      transition={SPRING}
-      style={{
-        position: 'absolute',
-        top: 0, left: 0, right: 0,
-        ...(isTop ? { x, rotate, opacity } : {}),
-        cursor: isTop ? 'grab' : 'default',
-        userSelect: 'none',
-        touchAction: 'pan-y',
-        WebkitUserSelect: 'none',
-      } as React.CSSProperties}
-      whileTap={isTop ? { scale: 1.015, cursor: 'grabbing' } : {}}
-    >
-      {/* Swipe direction hint overlays */}
-      {isTop && (
-        <>
-          <motion.div style={{
-            position: 'absolute', inset: 0, borderRadius: T.rLg, zIndex: 1,
-            background: 'rgba(186,26,26,0.12)',
-            pointerEvents: 'none', opacity: leftHint,
-          }} />
-          <motion.div style={{
-            position: 'absolute', inset: 0, borderRadius: T.rLg, zIndex: 1,
-            background: 'rgba(46,125,50,0.12)',
-            pointerEvents: 'none', opacity: rightHint,
-          }} />
-        </>
-      )}
-      <CardFace tip={tip} stackIndex={stackIndex} />
-    </motion.div>
-  );
-}
-
-// ─── Main carousel ─────────────────────────────────────────────────────────────
+// ─── Scroll-snap pager ──────────────────────────────────────────────────────────
 
 export function PermaTipsCarousel({
   plants, tips, heading, subject,
@@ -183,128 +112,111 @@ export function PermaTipsCarousel({
     () => tips ?? getPersonalizedTips(plants ?? [], 8),
     [tips, plants],
   );
-  const [topIdx, setTopIdx] = useState(0);
 
-  const remaining   = allTips.length - topIdx;
-  const visibleTips = allTips.slice(topIdx, topIdx + STACK_VISIBLE);
-  const today       = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const isPersonalized = (plants?.length ?? 0) >= 2;
-  const headerTitle  = heading ?? (isPersonalized ? 'Tips for Your Garden' : 'Daily Wisdom');
-  const badgeText    = subject ?? (isPersonalized ? `${plants!.length} plants` : today);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const rafRef      = useRef<number | null>(null);
+  const [active, setActive] = useState(0);
 
-  const handleDismiss = () => setTopIdx(i => Math.min(i + 1, allTips.length));
-  const handleReset   = () => setTopIdx(0);
+  const today          = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const isPersonalized  = (plants?.length ?? 0) >= 2;
+  const headerTitle     = heading ?? (isPersonalized ? 'Tips for Your Garden' : 'Daily Wisdom');
+  const badgeText       = subject ?? (isPersonalized ? `${plants!.length} plants` : today);
+
+  const step = () => {
+    const first = scrollerRef.current?.querySelector('[data-card]') as HTMLElement | null;
+    return first ? first.offsetWidth + GAP : 1;
+  };
+
+  const onScroll = useCallback(() => {
+    if (rafRef.current != null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const el = scrollerRef.current;
+      if (!el) return;
+      const first = el.querySelector('[data-card]') as HTMLElement | null;
+      const s = first ? first.offsetWidth + GAP : 1;
+      setActive(Math.max(0, Math.min(allTips.length - 1, Math.round(el.scrollLeft / s))));
+    });
+  }, [allTips.length]);
+
+  const goTo = (i: number) => {
+    scrollerRef.current?.scrollTo({ left: i * step(), behavior: 'smooth' });
+  };
 
   return (
     <div style={{ marginBottom: 28 }}>
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
         <div>
           <p style={{ margin: 0, fontSize: 14, color: T.text, fontWeight: 700, letterSpacing: -0.1 }}>
             {headerTitle}
           </p>
           <p style={{ margin: '2px 0 0', fontSize: 11, color: T.muted }}>
-            {remaining > 0
-              ? `${remaining} tip${remaining !== 1 ? 's' : ''} · swipe to dismiss`
-              : 'All read · great work!'}
+            {allTips.length} tip{allTips.length !== 1 ? 's' : ''} · swipe to browse
           </p>
         </div>
-
-        <AnimatePresence mode="wait">
-          {remaining > 0 ? (
-            <motion.span
-              key="badge"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={SPRING_BOUNCE}
-              style={{
-                fontSize: 10, fontWeight: 700, color: T.green,
-                background: T.greenLight, border: `1px solid ${T.greenMid}`,
-                borderRadius: 50, padding: '4px 10px', whiteSpace: 'nowrap',
-              }}
-            >
-              {badgeText}
-            </motion.span>
-          ) : (
-            <motion.button
-              key="reset"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={SPRING}
-              onClick={handleReset}
-              whileTap={{ scale: 0.95 }}
-              style={{
-                fontSize: 11, fontWeight: 600, color: T.green,
-                background: T.greenLight, border: `1px solid ${T.greenMid}`,
-                borderRadius: 50, padding: '5px 12px', cursor: 'pointer',
-              }}
-            >
-              See again
-            </motion.button>
-          )}
-        </AnimatePresence>
+        <span style={{
+          fontSize: 10, fontWeight: 700, color: T.green,
+          background: T.greenLight, border: `1px solid ${T.greenMid}`,
+          borderRadius: T.rPill, padding: '4px 10px', whiteSpace: 'nowrap',
+        }}>
+          {badgeText}
+        </span>
       </div>
 
-      {/* ── Stack ── */}
-      <div style={{ position: 'relative', height: remaining > 0 ? 212 : 86 }}>
-        <AnimatePresence>
-          {visibleTips.map((tip, i) => (
-            <SwipeCard
-              key={tip.id}
-              tip={tip}
-              stackIndex={i}
-              onDismiss={i === 0 ? handleDismiss : undefined}
+      {/* ── Paged scroller ── */}
+      <div
+        ref={scrollerRef}
+        onScroll={onScroll}
+        className="no-scrollbar"
+        role="group"
+        aria-label="Tips — swipe or use arrow keys to browse"
+        tabIndex={0}
+        style={{
+          display: 'flex',
+          gap: GAP,
+          overflowX: 'auto',
+          scrollSnapType: 'x mandatory',
+          scrollPaddingInline: 2,
+          paddingInline: 2,
+          paddingBottom: 4,
+          WebkitOverflowScrolling: 'touch',
+        }}>
+        {allTips.map((tip, i) => (
+          <motion.div
+            key={tip.id}
+            data-card
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...SPRING, delay: Math.min(i, 4) * 0.05 }}
+            style={{
+              flex: '0 0 86%',
+              scrollSnapAlign: 'center',
+            }}>
+            <CardFace tip={tip} />
+          </motion.div>
+        ))}
+      </div>
+
+      {/* ── Page dots ── */}
+      {allTips.length > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginTop: 12 }}>
+          {allTips.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => goTo(i)}
+              aria-label={`Go to tip ${i + 1}`}
+              aria-current={i === active ? 'true' : undefined}
+              style={{
+                width: i === active ? 20 : 6, height: 6,
+                padding: 0, border: 'none', cursor: 'pointer',
+                borderRadius: 3,
+                background: i === active ? T.green : T.border,
+                transition: 'width 0.22s ease, background 0.22s ease',
+              }}
             />
           ))}
-        </AnimatePresence>
-
-        {/* Empty state */}
-        {remaining === 0 && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={SPRING}
-            style={{
-              background: T.greenLight,
-              border: `1.5px solid ${T.greenMid}`,
-              borderRadius: T.rLg,
-              padding: '20px 20px',
-              display: 'flex', alignItems: 'center', gap: 14,
-            }}
-          >
-            <span style={{ fontSize: 28 }}>🌿</span>
-            <div>
-              <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: T.text }}>All caught up!</p>
-              <p style={{ margin: '2px 0 0', fontSize: 12, color: T.sub }}>
-                You've read all {allTips.length} tips
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </div>
-
-      {/* ── Progress dots ── */}
-      {remaining > 0 && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginTop: 14 }}>
-          {allTips.map((_, i) => {
-            const isActive = i === topIdx;
-            const isRead   = i < topIdx;
-            return (
-              <motion.div
-                key={i}
-                animate={{
-                  width:      isActive ? 20 : 6,
-                  background: isActive ? T.green : isRead ? T.greenMid : T.border,
-                  opacity:    isRead ? 0.5 : 1,
-                }}
-                transition={{ duration: 0.22 }}
-                style={{ height: 6, borderRadius: 3 }}
-              />
-            );
-          })}
         </div>
       )}
     </div>
