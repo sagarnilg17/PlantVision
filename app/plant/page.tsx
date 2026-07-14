@@ -21,7 +21,7 @@ const SPRING_SHEET = { type: 'spring' as const, bounce: 0.08, duration: 0.48 };
 
 type Plant = {
   id: string; plant_name: string; nickname: string | null; scientific_name: string;
-  image_urls: string[]; illustration_url: string | null;
+  image_urls: string[];
   next_watering_due: string | null; last_watered: string | null;
   light_level: string | null; watering_frequency: string; watering_tips: string;
   pot_size: string; pot_size_reason: string; care_tips: string[]; confidence: string;
@@ -258,22 +258,18 @@ export default function PlantDetail() {
       </motion.div>
 
       {/* ── Hero image ── */}
-      {(plant.illustration_url || plant.image_urls?.[0]) && (
+      {plant.image_urls?.[0] && (
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }}
           transition={{ ...SPRING_UI, delay: 0.05 }}
           style={{
             height: 220, overflow: 'hidden', position: 'relative',
-            background: plant.illustration_url ? 'rgba(255,255,255,0.60)' : T.greenLight,
+            background: T.greenLight,
           }}>
           <img
-            src={plant.illustration_url || plant.image_urls[0]}
+            src={plant.image_urls[0]}
             alt={plant.plant_name}
-            style={{
-              width: '100%', height: '100%',
-              objectFit: plant.illustration_url ? 'contain' : 'cover',
-              mixBlendMode: plant.illustration_url ? 'multiply' : undefined,
-            }}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
           {/* Confidence + toxicity badges over hero */}
           <div style={{ position: 'absolute', bottom: 12, left: 12, display: 'flex', gap: 6 }}>

@@ -165,20 +165,6 @@ export default function ScanPage() {
         if (!upErr) urls.push(supabase.storage.from('plant-photos').getPublicUrl(path).data.publicUrl);
       }
 
-      // Generate botanical illustration (best-effort — plant still saves if this fails)
-      let illustrationUrl: string | null = null;
-      try {
-        const illRes  = await apiFetch('/api/illustrate', { speciesName: chosen.commonName });
-        const illData = await illRes.json();
-        if (illData.url) {
-          // Download the generated image and re-upload to Supabase for permanent storage
-          const illBlob = await (await fetch(illData.url)).blob();
-          const illPath = `${userId}/illustrations/${Date.now()}_${chosen.commonName.replace(/\s+/g, '_')}.png`;
-          const { error: illUpErr } = await supabase.storage.from('plant-photos').upload(illPath, illBlob, { contentType: 'image/png' });
-          if (!illUpErr) illustrationUrl = supabase.storage.from('plant-photos').getPublicUrl(illPath).data.publicUrl;
-        }
-      } catch { /* illustration is best-effort */ }
-
       const engine = computeWatering({ baseWateringFrequency: care.wateringFrequency, light, lat: null });
       const due    = nextWateringDate(new Date().toISOString().slice(0, 10), engine.intervalDays);
       const { data: inserted } = await supabase.from('plants').insert({
@@ -190,7 +176,6 @@ export default function ScanPage() {
         watering_frequency: `Every ${engine.intervalDays} days`, watering_tips: care.wateringTips,
         pot_size: care.potSize, pot_size_reason: care.potSizeReason,
         care_tips: care.careTips, image_urls: urls,
-        illustration_url: illustrationUrl,
         last_watered: new Date().toISOString().slice(0, 10),
         next_watering_due: due,
       }).select('id').single();
@@ -404,7 +389,7 @@ export default function ScanPage() {
                 transition: 'background 0.2s, color 0.2s',
               }}>
               {loading
-                ? <><Spinner /> Saving &amp; generating illustration…</>
+                ? <><Spinner /> Saving…</>
                 : !light
                 ? 'Select light level to continue'
                 : `Save "${analysis.candidates[chosenIdx].commonName}"`}

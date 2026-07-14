@@ -21,7 +21,6 @@ type Plant = {
   last_watered: string | null;
   light_level: string | null; plant_health: string | null;
   plant_health_details: string | null;
-  illustration_url: string | null;
   watering_frequency: string;
   confidence: string | null;
   toxicity_info: string | null;
@@ -49,8 +48,7 @@ function waterLabel(d: number) {
 }
 
 function PlantAvatar({ plant, size = 64 }: { plant: Plant; size?: number }) {
-  const src   = plant.illustration_url || plant.image_urls?.[0] || null;
-  const isIll = !!plant.illustration_url;
+  const src   = plant.image_urls?.[0] || null;
   const init  = (plant.nickname || plant.plant_name).charAt(0).toUpperCase();
   const r     = Math.round(size * 0.22);
   if (!src) {
@@ -61,8 +59,8 @@ function PlantAvatar({ plant, size = 64 }: { plant: Plant; size?: number }) {
     );
   }
   return (
-    <div style={{ width: size, height: size, flexShrink: 0, borderRadius: r, overflow: 'hidden', border: `1px solid ${T.border}`, background: isIll ? '#fff' : T.greenLight }}>
-      <img src={src} alt={plant.plant_name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: isIll ? 'contain' : 'cover' }} />
+    <div style={{ width: size, height: size, flexShrink: 0, borderRadius: r, overflow: 'hidden', border: `1px solid ${T.border}`, background: T.greenLight }}>
+      <img src={src} alt={plant.plant_name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
     </div>
   );
 }
@@ -274,7 +272,7 @@ export default function PlantsPage() {
     try {
       const { data, error } = await supabase
         .from('plants')
-        .select('id, plant_name, nickname, scientific_name, image_urls, next_watering_due, last_watered, light_level, plant_health, plant_health_details, illustration_url, watering_frequency, confidence, toxicity_info')
+        .select('id, plant_name, nickname, scientific_name, image_urls, next_watering_due, last_watered, light_level, plant_health, plant_health_details, watering_frequency, confidence, toxicity_info')
         .eq('user_id', uid)
         .order('next_watering_due', { ascending: true, nullsFirst: false });
       if (error) throw error;
