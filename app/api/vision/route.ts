@@ -1,27 +1,31 @@
-import Groq from 'groq-sdk';
 import { NextRequest, NextResponse } from 'next/server';
+import { Type } from '@google/genai';
 import { getServerUser } from '@/lib/supabaseServer';
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY ?? '' });
+import { getGemini, GEMINI_MODEL } from '@/lib/gemini';
+import { getCachedCare, setCachedCare } from '@/lib/speciesCache';
 
 // Cap total base64 payload (~15 MB) so the identify endpoint can't be used to
-// fan out huge requests to the paid PlantNet / Groq APIs.
+// fan out huge requests to the paid PlantNet / Gemini APIs.
 const MAX_TOTAL_CHARS = 20_000_000;
 
-const CARE_PROMPT = `You are a houseplant care expert. Given a species, return ONLY valid JSON — no extra text:
+const CARE_PROMPT = `You are a houseplant care expert. Give concise, practical care info for the plant below. Use "Every X days" or "Every X-Y days" for wateringFrequency. Provide exactly 3 short careTips. toxicityNotes: one sentence naming which animals/people it is toxic to and the effect, or "Non-toxic to pets and humans."`;
 
-{
-  "wateringFrequency": "Every X-Y days",
-  "wateringTips": "One concise watering tip",
-  "potSize": "e.g. 6-inch pot",
-  "potSizeReason": "One sentence why",
-  "careTips": ["tip 1", "tip 2", "tip 3"],
-  "toxicToAnimals": true,
-  "toxicToHumans": false,
-  "toxicityNotes": "One sentence: which animals/people it is toxic to and the effect, or 'Non-toxic to pets and humans.'"
-}
-
-Use "Every X days" or "Every X-Y days" format for wateringFrequency. Be concise and practical.`;
+// Native structured output — no more regex-scraping JSON from free text.
+const CARE_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    wateringFrequency: { type: Type.STRING },
+    wateringTips:      { type: Type.STRING },
+    potSize:           { type: Type.STRING },
+    potSizeReason:     { type: Type.STRING },
+    careTips:          { type: Type.ARRAY, items: { type: Type.STRING } },
+    toxicToAnimals:    { type: Type.BOOLEAN },
+    toxicToHumans:     { type: Type.BOOLEAN },
+    toxicityNotes:     { type: Type.STRING },
+  },
+  required: ['wateringFrequency', 'wateringTips', 'potSize', 'potSizeReason', 'careTips', 'toxicToAnimals', 'toxicToHumans', 'toxicityNotes'],
+  propertyOrdering: ['wateringFrequency', 'wateringTips', 'potSize', 'potSizeReason', 'careTips', 'toxicToAnimals', 'toxicToHumans', 'toxicityNotes'],
+};
 
 export async function POST(req: NextRequest) {
   const user = await getServerUser();
@@ -92,22 +96,20 @@ export async function POST(req: NextRequest) {
     });
     const topMatch = candidates[0];
 
-    // 3. Ask Groq for care info based on the identified species
-    const careRes = await groq.chat.completions.create({
-      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-      messages: [
-        {
-          role: 'user',
-          content: `${CARE_PROMPT}\n\nPlant: ${topMatch.commonName} (${topMatch.scientificName})`,
-        },
-      ],
-      max_tokens: 500,
-    });
-
-    const careRaw = careRes.choices[0]?.message?.content ?? '';
-    const careMatch = careRaw.match(/\{[\s\S]*\}/);
-    if (!careMatch) throw new Error('Could not parse care data');
-    const care = JSON.parse(careMatch[0]);
+    // 3. Care info — served from the species cache when available, else generated
+    //    by Gemini (structured JSON) and cached for the next scan of this species.
+    let care = await getCachedCare(topMatch.scientificName);
+    if (!care) {
+      const ai = getGemini();
+      if (!ai) return NextResponse.json({ error: 'AI is not configured (GEMINI_API_KEY missing)' }, { status: 500 });
+      const careRes = await ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: `${CARE_PROMPT}\n\nPlant: ${topMatch.commonName} (${topMatch.scientificName})`,
+        config: { responseMimeType: 'application/json', responseSchema: CARE_SCHEMA },
+      });
+      care = JSON.parse(careRes.text ?? '{}');
+      await setCachedCare(topMatch.scientificName, topMatch.commonName, care);
+    }
 
     return NextResponse.json({ candidates, topMatch, care });
   } catch (err: unknown) {
