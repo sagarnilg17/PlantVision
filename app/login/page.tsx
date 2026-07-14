@@ -97,8 +97,8 @@ export default function LoginPage() {
         position: 'relative', overflow: 'hidden',
         flexShrink: 0,
       }}>
-        <div style={{ position: 'relative', textAlign: 'center' }}>
-          <div style={{ marginBottom: 16 }}><PlantMark /></div>
+        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+          <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center', width: '100%' }}><PlantMark /></div>
           <h1 style={{ fontSize: 30, fontWeight: 700, color: '#fff', margin: '0 0 8px', letterSpacing: -0.5 }}>Maali</h1>
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.68)', margin: 0, lineHeight: 1.5 }}>
             {step === 'email' ? 'Identify, track and care for your plants' : `Check ${email}`}
