@@ -9,10 +9,12 @@ const securityHeaders = [
   { key: "Permissions-Policy", value: "camera=(self), geolocation=(self), microphone=(), payment=()" },
 ];
 
-// The Capacitor build sets BUILD_TARGET=static to emit a static `out/` bundle for
-// the native app. That mode can't run route handlers or apply headers() — those
-// only exist on the Vercel-deployed web build, which the native app calls by URL.
-const isStatic = process.env.BUILD_TARGET === "static";
+// Three build targets:
+//  - BUILD_TARGET=static  → static `out/` bundle for the Capacitor/APK build
+//  - BUILD_STANDALONE=1   → self-contained Node server for a container (Cloud Run)
+//  - (neither)            → Vercel's managed runtime
+const isStatic     = process.env.BUILD_TARGET === "static";
+const isStandalone = process.env.BUILD_STANDALONE === "1";
 
 const nextConfig: NextConfig = isStatic
   ? {
@@ -21,6 +23,9 @@ const nextConfig: NextConfig = isStatic
       images: { unoptimized: true },
     }
   : {
+      // `standalone` produces `.next/standalone/server.js` for the Docker image.
+      // Left off on Vercel so it keeps using its own optimized runtime.
+      ...(isStandalone ? { output: "standalone" as const } : {}),
       async headers() {
         return [{ source: "/:path*", headers: securityHeaders }];
       },

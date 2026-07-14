@@ -1,0 +1,22 @@
+# Keep the build context small — the Docker build only needs source
+node_modules
+.next
+out
+android
+capacitor
+.git
+.gitignore
+.gitattributes
+*.apk
+.env*
+.claude
+.agents
+.impeccable
+.vercel
+npm-debug.log*
+Dockerfile
+.dockerignore
+README.md
+ANDROID.md
+CLOUDRUN.md
+public/case-study.html
