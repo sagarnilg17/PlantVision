@@ -86,7 +86,7 @@ export default function LoginPage() {
   const canSubmitOtp   = otp.length === 6 && !loading;
 
   return (
-    <main style={{ minHeight: '100vh', background: T.bg, display: 'flex', flexDirection: 'column' }}>
+    <main style={{ minHeight: '100dvh', background: T.bg, display: 'flex', flexDirection: 'column' }}>
 
       {/* Hero */}
       <div style={{
@@ -99,7 +99,7 @@ export default function LoginPage() {
       }}>
         <div style={{ position: 'relative', textAlign: 'center' }}>
           <div style={{ marginBottom: 16 }}><PlantMark /></div>
-          <h1 style={{ fontSize: 30, fontWeight: 700, color: '#fff', margin: '0 0 8px', letterSpacing: -0.5 }}>Plant Care</h1>
+          <h1 style={{ fontSize: 30, fontWeight: 700, color: '#fff', margin: '0 0 8px', letterSpacing: -0.5 }}>Maali</h1>
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.68)', margin: 0, lineHeight: 1.5 }}>
             {step === 'email' ? 'Identify, track and care for your plants' : `Check ${email}`}
           </p>

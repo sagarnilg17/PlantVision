@@ -1,6 +1,6 @@
 # Android / Play Store build guide
 
-Plant Care ships to Android as a **Capacitor app with the UI bundled locally**. The
+Maali ships to Android as a **Capacitor app with the UI bundled locally**. The
 web app is exported to static files (`out/`) and packaged into the APK, so the shell
 loads instantly from `capacitor://localhost` and works offline. Only the parts that
 genuinely need a server go over the network:
@@ -19,7 +19,7 @@ genuinely need a server go over the network:
   4. runs `cap sync android` to copy the bundle into `android/`.
 - **API base URL** — defaults to `https://plant-vision-three.vercel.app`; override
   with `CAP_API_BASE` (set a custom domain there).
-- **App ID:** `com.plantvision.app` · **Name:** Plant Care
+- **App ID:** `com.maali.app` · **Name:** Maali
 
 ## Prerequisites (on your machine — not doable in this environment)
 
@@ -33,12 +33,12 @@ The app returns from Google OAuth via a deep link. In the Supabase dashboard →
 **Authentication → URL Configuration → Redirect URLs**, add:
 
 ```
-com.plantvision.app://login-callback
+com.maali.app://login-callback
 ```
 
 (Email one-time-code login works without this; only Google OAuth needs it.) The
 Android side is already wired: `AndroidManifest.xml` registers the
-`com.plantvision.app` scheme, and `NativeAuthBridge` completes the session.
+`com.maali.app` scheme, and `NativeAuthBridge` completes the session.
 
 ## Build & run (debug)
 

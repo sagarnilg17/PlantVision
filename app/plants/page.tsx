@@ -6,7 +6,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { computeWatering, nextWateringDate, type LightLevel } from '@/lib/careEngine';
 import { Nav } from '@/components/Nav';
+import { Check, AlertTriangle, Droplet, Cloud, CloudSun, Sun, Flower2, type LucideIcon } from 'lucide-react';
 import { T } from '@/lib/theme';
+
+const LIGHT_ICON: Record<string, LucideIcon> = { low: Cloud, medium: CloudSun, bright: Sun };
 
 const SPRING_UI  = { type: 'spring' as const, bounce: 0, duration: 0.35 };
 const SPRING_TAP = { type: 'spring' as const, bounce: 0, duration: 0.18 };
@@ -127,8 +130,8 @@ function PlantCard({ p, idx, userId, onRefresh }: {
 
       {/* Content */}
       <div style={{ flex: 1, padding: '14px 10px 14px 14px', minWidth: 0 }}>
-        <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: watered ? T.green : T.text, lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {watered && '✓ '}{p.nickname || p.plant_name}
+        <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: watered ? T.green : T.text, lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 5 }}>
+          {watered && <Check size={15} strokeWidth={2.6} color={T.green} aria-hidden="true" />}{p.nickname || p.plant_name}
         </p>
         <p style={{ margin: '2px 0 0', fontSize: 11, color: T.muted, fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {p.nickname ? p.plant_name : (p.scientific_name ?? '')}
@@ -151,8 +154,9 @@ function PlantCard({ p, idx, userId, onRefresh }: {
                 fontSize: 10, fontWeight: 600, color: T.danger,
                 background: T.dangerLight, border: `0.5px solid ${T.dangerBorder}`,
                 borderRadius: T.rPill, padding: '2px 7px',
+                display: 'inline-flex', alignItems: 'center', gap: 3,
               }}>
-                ⚠️ Toxic
+                <AlertTriangle size={11} strokeWidth={2.4} aria-hidden="true" /> Toxic
               </span>
             )}
           </div>
@@ -168,7 +172,7 @@ function PlantCard({ p, idx, userId, onRefresh }: {
               borderRadius: T.rPill, padding: '4px 10px',
               fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap',
             }}>
-              💧 {wl.text}
+              <Droplet size={12} strokeWidth={2.2} aria-hidden="true" /> {wl.text}
             </span>
           )}
 
@@ -180,7 +184,7 @@ function PlantCard({ p, idx, userId, onRefresh }: {
               borderRadius: T.rPill, padding: '3px 8px',
               whiteSpace: 'nowrap',
             }}>
-              {p.light_level === 'low' ? '🌥️' : p.light_level === 'medium' ? '⛅' : '☀️'}
+              {(() => { const I = LIGHT_ICON[p.light_level] ?? Sun; return <I size={12} strokeWidth={2} aria-hidden="true" />; })()}
               {' '}{p.light_level} light
             </span>
           )}
@@ -227,7 +231,7 @@ function PlantCard({ p, idx, userId, onRefresh }: {
             }}>
               {watering
                 ? <div style={{ width: 12, height: 12, border: '2px solid rgba(255,255,255,0.4)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                : '💧'}
+                : <Droplet size={15} strokeWidth={2.2} color="#fff" aria-hidden="true" />}
             </div>
           </button>
         )}
@@ -424,8 +428,8 @@ export default function PlantsPage() {
           <motion.div
             initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING_UI, delay: 0.05 }}
             style={{ textAlign: 'center', padding: '56px 20px' }}>
-            <div style={{ width: 80, height: 80, borderRadius: 24, background: T.glassCard, border: T.glassCardBd, boxShadow: T.glassCardSh, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 36 }}>
-              🪴
+            <div style={{ width: 80, height: 80, borderRadius: 24, background: T.glassCard, border: T.glassCardBd, boxShadow: T.glassCardSh, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              <Flower2 size={36} strokeWidth={1.6} color={T.green} aria-hidden="true" />
             </div>
             <p style={{ fontSize: 18, fontWeight: 800, color: T.text, margin: '0 0 8px' }}>No plants yet</p>
             <p style={{ fontSize: 13, color: T.sub, margin: '0 0 24px', lineHeight: 1.6 }}>

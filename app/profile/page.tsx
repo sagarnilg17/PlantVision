@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { Nav } from '@/components/Nav';
+import { Sprout } from 'lucide-react';
 import { T } from '@/lib/theme';
 
 const SPRING_UI  = { type: 'spring' as const, bounce: 0, duration: 0.35 };
@@ -17,7 +18,7 @@ function buildEmailHref(subject: string, bodyLines: string[], userEmail: string 
     ...bodyLines,
     '',
     '—',
-    `Sent from Plant Care${userEmail ? ` by ${userEmail}` : ''}`,
+    `Sent from Maali${userEmail ? ` by ${userEmail}` : ''}`,
   ].join('\n');
   return `mailto:${DEVELOPER_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
@@ -146,10 +147,10 @@ export default function ProfilePage() {
   const displayName = name ?? email?.split('@')[0] ?? 'My Profile';
   const initial     = displayName[0].toUpperCase();
 
-  const featureHref = buildEmailHref('Plant Care — Feature Request', [
+  const featureHref = buildEmailHref('Maali — Feature Request', [
     'Hi Sagar,',
     '',
-    'I have a feature idea for Plant Care!',
+    'I have a feature idea for Maali!',
     '',
     'What I want to do:',
     '(describe the feature here)',
@@ -158,10 +159,10 @@ export default function ProfilePage() {
     '(what problem does it solve?)',
   ], email);
 
-  const reportHref = buildEmailHref('Plant Care — Problem Report', [
+  const reportHref = buildEmailHref('Maali — Problem Report', [
     'Hi Sagar,',
     '',
-    'I ran into a problem with Plant Care:',
+    'I ran into a problem with Maali:',
     '',
     'What happened:',
     '(describe the issue here)',
@@ -261,13 +262,15 @@ export default function ProfilePage() {
           <SectionLabel>About</SectionLabel>
           <GroupCard delay={0.16}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px' }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Plant Care</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Maali</span>
               <span style={{ fontSize: 13, color: T.muted }}>Version 1.0</span>
             </div>
             <RowDivider />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px' }}>
               <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Made with</span>
-              <span style={{ fontSize: 13, color: T.muted }}>🌱 in India</span>
+              <span style={{ fontSize: 13, color: T.muted, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <Sprout size={14} strokeWidth={2} color={T.green} aria-hidden="true" /> in India
+              </span>
             </div>
           </GroupCard>
         </div>

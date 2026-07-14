@@ -22,12 +22,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- OAuth deep link: Supabase redirects to com.plantvision.app://login-callback -->
+            <!-- OAuth deep link: Supabase redirects to com.maali.app://login-callback -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="com.plantvision.app" />
+                <data android:scheme="com.maali.app" />
             </intent-filter>
 
         </activity>

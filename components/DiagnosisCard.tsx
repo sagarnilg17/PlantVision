@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Search, Check, X } from 'lucide-react';
 import { T } from '@/lib/theme';
 
 export type Differential = {
@@ -50,7 +51,7 @@ export function DiagnosisCard({ diagnosis }: { diagnosis: Diagnosis }) {
       {/* Overall health */}
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.r, padding: 16, boxShadow: T.shadow }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: diagnosis.observations?.length ? 12 : 0 }}>
-          <span style={{ fontSize: 11, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>Health check</span>
+          <span style={{ fontSize: 13, color: T.sub, fontWeight: 700 }}>Health check</span>
           <span style={{
             background: hm.bg, color: hm.color, border: `1px solid ${hm.border}`,
             borderRadius: T.rPill, padding: '3px 12px', fontSize: 11, fontWeight: 700,
@@ -71,7 +72,7 @@ export function DiagnosisCard({ diagnosis }: { diagnosis: Diagnosis }) {
       {/* Differentials */}
       {diagnosis.differentials.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <p style={{ fontSize: 11, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, margin: 0, fontWeight: 700 }}>Possible causes</p>
+          <p style={{ fontSize: 13, color: T.sub, margin: 0, fontWeight: 700 }}>Possible causes</p>
           {diagnosis.differentials.map((d, i) => {
             const isLeaning = !!(topLeaning && d.cause.toLowerCase().includes(topLeaning.toLowerCase()));
             const lm = likMeta(d.likelihood);
@@ -86,9 +87,11 @@ export function DiagnosisCard({ diagnosis }: { diagnosis: Diagnosis }) {
                   <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: T.text, flex: 1, paddingRight: 8 }}>
                     {isLeaning && '→ '}Possible: {d.cause}
                   </p>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: lm.color, textTransform: 'uppercase', letterSpacing: 0.5, flexShrink: 0, marginTop: 2 }}>{lm.label}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: lm.color, flexShrink: 0, marginTop: 2 }}>{lm.label}</span>
                 </div>
-                <p style={{ margin: '0 0 6px', fontSize: 13, color: T.text }}>🔍 {d.evidence}</p>
+                <p style={{ margin: '0 0 6px', fontSize: 13, color: T.text, display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                  <Search size={14} strokeWidth={2} style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true" /> {d.evidence}
+                </p>
                 <p style={{ margin: 0, fontSize: 12, color: T.muted }}>Can't tell from photo: {d.missingEvidence}</p>
               </div>
             );
@@ -113,23 +116,25 @@ export function DiagnosisCard({ diagnosis }: { diagnosis: Diagnosis }) {
                     {qi + 1}. {q.question}
                   </p>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => setAnswers(a => ({ ...a, [q.id]: 'yes' }))} style={{
+                    <button onClick={() => setAnswers(a => ({ ...a, [q.id]: 'yes' }))} aria-pressed={ans === 'yes'} style={{
                       flex: 1, padding: '9px 0', borderRadius: T.rSm, cursor: 'pointer',
                       border: `2px solid ${ans === 'yes' ? T.green : T.border}`,
                       background: ans === 'yes' ? T.greenLight : 'transparent',
                       color: ans === 'yes' ? T.green : T.sub,
                       fontSize: 13, fontWeight: 700, transition: 'all 0.15s',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                     }}>
-                      {ans === 'yes' ? '✓ ' : ''}Yes
+                      {ans === 'yes' && <Check size={15} strokeWidth={2.6} aria-hidden="true" />}Yes
                     </button>
-                    <button onClick={() => setAnswers(a => ({ ...a, [q.id]: 'no' }))} style={{
+                    <button onClick={() => setAnswers(a => ({ ...a, [q.id]: 'no' }))} aria-pressed={ans === 'no'} style={{
                       flex: 1, padding: '9px 0', borderRadius: T.rSm, cursor: 'pointer',
                       border: `2px solid ${ans === 'no' ? T.borderMid : T.border}`,
                       background: ans === 'no' ? T.bg : 'transparent',
                       color: ans === 'no' ? T.text : T.sub,
                       fontSize: 13, fontWeight: 700, transition: 'all 0.15s',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                     }}>
-                      {ans === 'no' ? '✕ ' : ''}No
+                      {ans === 'no' && <X size={15} strokeWidth={2.6} aria-hidden="true" />}No
                     </button>
                   </div>
                   {ans === 'yes' && (

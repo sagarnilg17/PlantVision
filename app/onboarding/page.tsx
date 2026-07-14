@@ -5,16 +5,17 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { LocationPicker, type PickedLocation } from '@/components/LocationPicker';
+import { Sprout, Leaf, TreePine, MapPin, type LucideIcon } from 'lucide-react';
 import { T } from '@/lib/theme';
 
 const SPRING_UI  = { type: 'spring' as const, bounce: 0,    duration: 0.35 };
 const SPRING_TAP = { type: 'spring' as const, bounce: 0,    duration: 0.18 };
 const SPRING_NAV = { type: 'spring' as const, bounce: 0.08, duration: 0.48 };
 
-const EXPERTISE = [
-  { key: 'beginner',     emoji: '🌱', label: 'Beginner',     sub: "I'm just getting started" },
-  { key: 'intermediate', emoji: '🌿', label: 'Intermediate', sub: 'I know the basics, learning more' },
-  { key: 'expert',       emoji: '🌳', label: 'Expert',       sub: 'Plants are my thing' },
+const EXPERTISE: { key: string; Icon: LucideIcon; label: string; sub: string }[] = [
+  { key: 'beginner',     Icon: Sprout,   label: 'Beginner',     sub: "I'm just getting started" },
+  { key: 'intermediate', Icon: Leaf,     label: 'Intermediate', sub: 'I know the basics, learning more' },
+  { key: 'expert',       Icon: TreePine, label: 'Expert',       sub: 'Plants are my thing' },
 ];
 
 function Spinner() {
@@ -76,11 +77,11 @@ export default function OnboardingPage() {
         <motion.div
           initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
           transition={{ ...SPRING_NAV, delay: 0.1 }}
-          style={{ fontSize: 64, marginBottom: 20, lineHeight: 1 }}>
-          🌿
+          style={{ marginBottom: 20, lineHeight: 1 }}>
+          <Sprout size={60} strokeWidth={1.5} color={T.green} aria-hidden="true" />
         </motion.div>
         <h1 style={{ margin: '0 0 10px', fontSize: 26, fontWeight: 800, color: T.text, letterSpacing: -0.5, lineHeight: 1.2 }}>
-          Welcome to Plant Care
+          Welcome to Maali
         </h1>
         <p style={{ margin: 0, fontSize: 15, color: T.muted, lineHeight: 1.55 }}>
           What should we call you?
@@ -133,8 +134,8 @@ export default function OnboardingPage() {
         <motion.div
           initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
           transition={{ ...SPRING_NAV, delay: 0.1 }}
-          style={{ fontSize: 64, marginBottom: 20, lineHeight: 1 }}>
-          🗺️
+          style={{ marginBottom: 20, lineHeight: 1 }}>
+          <MapPin size={60} strokeWidth={1.5} color={T.green} aria-hidden="true" />
         </motion.div>
         <h1 style={{ margin: '0 0 10px', fontSize: 26, fontWeight: 800, color: T.text, letterSpacing: -0.5, lineHeight: 1.2 }}>
           Where are your plants?
@@ -188,8 +189,8 @@ export default function OnboardingPage() {
         <motion.div
           initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
           transition={{ ...SPRING_NAV, delay: 0.1 }}
-          style={{ fontSize: 64, marginBottom: 20, lineHeight: 1 }}>
-          🌱
+          style={{ marginBottom: 20, lineHeight: 1 }}>
+          <Leaf size={60} strokeWidth={1.5} color={T.green} aria-hidden="true" />
         </motion.div>
         <h1 style={{ margin: '0 0 8px', fontSize: 26, fontWeight: 800, color: T.text, letterSpacing: -0.5, lineHeight: 1.2 }}>
           How green is your thumb?
@@ -218,7 +219,7 @@ export default function OnboardingPage() {
               borderRadius: T.rSm, cursor: 'pointer',
               transition: 'background 0.18s, border-color 0.18s, box-shadow 0.18s',
             }}>
-            <span style={{ fontSize: 28, flexShrink: 0 }}>{e.emoji}</span>
+            <e.Icon size={26} strokeWidth={1.8} color={expertise === e.key ? T.green : T.sub} style={{ flexShrink: 0 }} aria-hidden="true" />
             <div>
               <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: expertise === e.key ? T.green : T.text }}>{e.label}</p>
               <p style={{ margin: '2px 0 0', fontSize: 12, color: T.muted }}>{e.sub}</p>
@@ -250,7 +251,7 @@ export default function OnboardingPage() {
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           marginBottom: 10,
         }}>
-        {saving ? <><Spinner /> Setting up your garden…</> : "Let's start growing 🌿"}
+        {saving ? <><Spinner /> Setting up your garden…</> : "Let's start growing"}
       </motion.button>
 
       <motion.button

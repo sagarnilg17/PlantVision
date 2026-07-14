@@ -9,6 +9,10 @@ import { Nav } from '@/components/Nav';
 import { PermaTipsCarousel } from '@/components/PermaTipsCarousel';
 import { Snackbar, type SnackState } from '@/components/Snackbar';
 import { getPlantTips } from '@/lib/permacultureTips';
+import {
+  Droplet, Sprout, Flower2, Sun, Cloud, CloudSun,
+  AlertTriangle, ShieldCheck, ArrowLeft, Pencil, Trash2, RefreshCw, type LucideIcon,
+} from 'lucide-react';
 import { T } from '@/lib/theme';
 
 const SPRING_UI   = { type: 'spring' as const, bounce: 0,    duration: 0.35 };
@@ -28,11 +32,12 @@ type Checkin = { id: string; image_urls: string[]; created_at: string; notes: st
 
 const dayDiff = (d: string) => Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);
 
-const LIGHTS: { key: LightLevel; label: string; icon: string; sub: string }[] = [
-  { key: 'low',    label: 'Low',    icon: '🌥️', sub: 'Shade / north' },
-  { key: 'medium', label: 'Medium', icon: '⛅',  sub: 'Indirect light' },
-  { key: 'bright', label: 'Bright', icon: '☀️',  sub: 'Direct sun' },
+const LIGHTS: { key: LightLevel; label: string; Icon: LucideIcon; sub: string }[] = [
+  { key: 'low',    label: 'Low',    Icon: Cloud,    sub: 'Shade / north' },
+  { key: 'medium', label: 'Medium', Icon: CloudSun, sub: 'Indirect light' },
+  { key: 'bright', label: 'Bright', Icon: Sun,      sub: 'Direct sun' },
 ];
+const LIGHT_ICON: Record<string, LucideIcon> = { low: Cloud, medium: CloudSun, bright: Sun };
 
 function Spinner({ size = 20, light = false }: { size?: number; light?: boolean }) {
   return (
@@ -45,10 +50,10 @@ function Spinner({ size = 20, light = false }: { size?: number; light?: boolean 
   );
 }
 
-const LOG_META: Record<string, { icon: string; label: string }> = {
-  watered:    { icon: '💧', label: 'Watered' },
-  fertilised: { icon: '🌱', label: 'Fertilised' },
-  repotted:   { icon: '🪴', label: 'Repotted' },
+const LOG_META: Record<string, { Icon: LucideIcon; label: string }> = {
+  watered:    { Icon: Droplet, label: 'Watered' },
+  fertilised: { Icon: Sprout,  label: 'Fertilised' },
+  repotted:   { Icon: Flower2, label: 'Repotted' },
 };
 
 function GlassCard({ children, delay = 0, style }: {
@@ -164,7 +169,7 @@ export default function PlantDetail() {
     setBusy(false);
     const label = LOG_META[action]?.label ?? 'Logged';
     setSnack({
-      message: `${LOG_META[action]?.icon ?? '✓'} ${label}`,
+      message: `${label} logged`,
       onUndo: async () => {
         if (row?.id) await supabase.from('care_log').delete().eq('id', row.id);
         if (action === 'watered') {
@@ -195,9 +200,9 @@ export default function PlantDetail() {
   const isToxic = toxicity ? (toxicity.animals || toxicity.humans) : false;
 
   const QUICK = [
-    { action: 'watered',    icon: '💧', label: 'Watered' },
-    { action: 'fertilised', icon: '🌱', label: 'Fertilised' },
-    { action: 'repotted',   icon: '🪴', label: 'Repotted' },
+    { action: 'watered',    Icon: Droplet, label: 'Watered' },
+    { action: 'fertilised', Icon: Sprout,  label: 'Fertilised' },
+    { action: 'repotted',   Icon: Flower2, label: 'Repotted' },
   ];
 
   return (
@@ -229,7 +234,7 @@ export default function PlantDetail() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', flexShrink: 0, fontSize: 16, color: T.text,
           }}>
-          <span aria-hidden="true">←</span>
+          <ArrowLeft size={18} strokeWidth={2.2} color={T.text} aria-hidden="true" />
         </motion.button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ margin: 0, fontSize: 17, fontWeight: 800, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: -0.3 }}>
@@ -248,10 +253,7 @@ export default function PlantDetail() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', flexShrink: 0,
           }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.text} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
+          <Pencil size={15} strokeWidth={2.2} color={T.text} aria-hidden="true" />
         </motion.button>
       </motion.div>
 
@@ -293,8 +295,9 @@ export default function PlantDetail() {
                 backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
                 border: '0.5px solid rgba(255,255,255,0.60)',
                 borderRadius: T.rPill, padding: '4px 10px',
+                display: 'inline-flex', alignItems: 'center', gap: 4,
               }}>
-                ⚠️ Toxic
+                <AlertTriangle size={13} strokeWidth={2.4} aria-hidden="true" /> Toxic
               </span>
             )}
           </div>
@@ -306,7 +309,7 @@ export default function PlantDetail() {
         <div style={{ display: 'flex', gap: 8, padding: '14px 16px 0', overflowX: 'auto' }}>
           {plant.image_urls.map((url, i) => (
             <div key={i} style={{ flexShrink: 0, width: 80, height: 80, borderRadius: 12, overflow: 'hidden', border: T.glassCardBd, boxShadow: T.glassCardSh }}>
-              <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={url} alt={`${plant.nickname || plant.plant_name} photo ${i + 1}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
           ))}
         </div>
@@ -321,8 +324,9 @@ export default function PlantDetail() {
           padding: 20,
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-            <p style={{ margin: 0, fontSize: 20, fontWeight: 800, letterSpacing: -0.4, lineHeight: 1.2, color: overdue ? T.amberText : T.greenDark }}>
-              {d === null ? 'No watering schedule yet' : d <= 0 ? '💧 Needs water today' : `💧 Next water in ${d} day${d !== 1 ? 's' : ''}`}
+            <p style={{ margin: 0, fontSize: 20, fontWeight: 800, letterSpacing: -0.4, lineHeight: 1.2, color: overdue ? T.amberText : T.greenDark, display: 'flex', alignItems: 'center', gap: 8 }}>
+              {d !== null && <Droplet size={20} strokeWidth={2.4} style={{ flexShrink: 0 }} aria-hidden="true" />}
+              {d === null ? 'No watering schedule yet' : d <= 0 ? 'Needs water today' : `Next water in ${d} day${d !== 1 ? 's' : ''}`}
             </p>
             {plant.watering_frequency && (
               <span style={{
@@ -343,15 +347,18 @@ export default function PlantDetail() {
             {plant.light_level && (
               <div style={{ flex: 1 }}>
                 <p style={{ margin: '0 0 2px', fontSize: 12, color: T.muted, fontWeight: 500 }}>Light</p>
-                <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: T.text }}>
-                  {plant.light_level === 'low' ? '🌥️ Low' : plant.light_level === 'medium' ? '⛅ Medium' : '☀️ Bright'}
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: T.text, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {(() => { const I = LIGHT_ICON[plant.light_level] ?? Sun; return <I size={16} strokeWidth={2} aria-hidden="true" />; })()}
+                  {plant.light_level === 'low' ? 'Low' : plant.light_level === 'medium' ? 'Medium' : 'Bright'}
                 </p>
               </div>
             )}
             {plant.pot_size && (
               <div style={{ flex: 1, borderLeft: plant.light_level ? `0.5px solid ${T.border}` : undefined, paddingLeft: plant.light_level ? 12 : 0 }}>
                 <p style={{ margin: '0 0 2px', fontSize: 12, color: T.muted, fontWeight: 500 }}>Pot size</p>
-                <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: T.text }}>🪴 {plant.pot_size}</p>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: T.text, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Flower2 size={16} strokeWidth={2} aria-hidden="true" /> {plant.pot_size}
+                </p>
               </div>
             )}
           </div>
@@ -368,7 +375,9 @@ export default function PlantDetail() {
             padding: 14,
           }}>
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-              <span style={{ fontSize: 20, flexShrink: 0 }}>{isToxic ? '⚠️' : '✅'}</span>
+              {isToxic
+                ? <AlertTriangle size={20} strokeWidth={2} color={T.danger} style={{ flexShrink: 0 }} aria-hidden="true" />
+                : <ShieldCheck size={20} strokeWidth={2} color={T.green} style={{ flexShrink: 0 }} aria-hidden="true" />}
               <div>
                 <p style={{ margin: '0 0 3px', fontSize: 13, fontWeight: 700, color: isToxic ? T.danger : T.green }}>
                   {isToxic ? 'Toxic' : 'Non-toxic'}
@@ -401,7 +410,7 @@ export default function PlantDetail() {
                     opacity: busy ? 0.6 : 1,
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
                   }}>
-                  <span style={{ fontSize: 22 }}>{q.icon}</span>
+                  <q.Icon size={22} strokeWidth={2} color={T.green} aria-hidden="true" />
                   <span style={{ fontSize: 11, fontWeight: 600, color: T.text }}>{q.label}</span>
                 </motion.button>
               ))}
@@ -421,8 +430,9 @@ export default function PlantDetail() {
             border: `1.5px solid rgba(46,125,50,0.30)`,
             boxShadow: T.glassCardSh,
             borderRadius: T.rSm, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           }}>
-          Re-scan &amp; update health
+          <RefreshCw size={16} strokeWidth={2} aria-hidden="true" /> Re-scan &amp; update health
         </motion.button>
 
         {/* ── History: growth photos + care log, grouped ── */}
@@ -437,7 +447,7 @@ export default function PlantDetail() {
                 {checkins.map(ci => (
                   <div key={ci.id} style={{ flexShrink: 0, width: 88 }}>
                     <div style={{ width: 88, height: 88, borderRadius: T.rSm, overflow: 'hidden', border: T.glassCardBd, boxShadow: T.glassCardSh }}>
-                      <img src={ci.image_urls?.[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={ci.image_urls?.[0]} alt={`Check-in ${new Date(ci.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                     <p style={{ margin: '5px 0 0', fontSize: 10, color: T.muted, textAlign: 'center' }}>
                       {new Date(ci.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -450,7 +460,8 @@ export default function PlantDetail() {
             {logs.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {logs.map(l => {
-                  const meta = LOG_META[l.action] ?? { icon: '•', label: l.action };
+                  const meta = LOG_META[l.action];
+                  const MetaIcon = meta?.Icon;
                   return (
                     <div key={l.id} style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -458,7 +469,10 @@ export default function PlantDetail() {
                       background: T.glassCard, border: T.glassCardBd, boxShadow: T.glassCardSh,
                       borderRadius: T.rSm,
                     }}>
-                      <span style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>{meta.icon} {meta.label}</span>
+                      <span style={{ fontSize: 13, color: T.text, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 7 }}>
+                        {MetaIcon ? <MetaIcon size={15} strokeWidth={2} color={T.green} aria-hidden="true" /> : null}
+                        {meta?.label ?? l.action}
+                      </span>
                       <span style={{ fontSize: 12, color: T.muted }}>
                         {new Date(l.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </span>
@@ -556,7 +570,7 @@ export default function PlantDetail() {
                       boxShadow: T.glassCardSh,
                       cursor: 'pointer',
                     }}>
-                    <div style={{ fontSize: 18, marginBottom: 3 }}>{l.icon}</div>
+                    <l.Icon size={18} strokeWidth={2} color={editLight === l.key ? T.green : T.sub} style={{ marginBottom: 4 }} aria-hidden="true" />
                     <div style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{l.label}</div>
                     <div style={{ fontSize: 10, color: T.muted, marginTop: 1 }}>{l.sub}</div>
                   </motion.button>
@@ -618,10 +632,7 @@ export default function PlantDetail() {
                 }}>
                 <div style={{ textAlign: 'center', marginBottom: 22 }}>
                   <div style={{ width: 52, height: 52, borderRadius: '50%', background: T.dangerLight, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={T.danger} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                      <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-                    </svg>
+                    <Trash2 size={22} strokeWidth={2} color={T.danger} aria-hidden="true" />
                   </div>
                   <h3 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 800, color: T.text }}>
                     Remove {plant.nickname || plant.plant_name}?

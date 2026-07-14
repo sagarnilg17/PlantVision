@@ -2,29 +2,18 @@
 
 import { useMemo, useRef, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import { Sprout } from 'lucide-react';
 import { T } from '@/lib/theme';
 import { getPersonalizedTips, type PermaTip, type PlantSummary } from '@/lib/permacultureTips';
 
 const SPRING = { type: 'spring' as const, bounce: 0, duration: 0.35 };
 const GAP = 12;
 
-// Convert a hex accent to a translucent rgba tint for on-glass chips
-function tint(hex: string, alpha: number): string {
-  const h = hex.replace('#', '');
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-
 // ─── Card face ────────────────────────────────────────────────────────────────
-// Cards no longer overlap (scroll-snap pager), so each sits directly on the page
-// background. A near-opaque fill keeps text crisp; the "glass" read comes from the
-// inset highlight + shadow, not the alpha.
+// Numbered tip + body text only. One library icon (no emoji), no category chips —
+// the heading is simply "Tip N" and the card's job is to surface the tip text.
 
-function CardFace({ tip }: { tip: PermaTip }) {
-  const accent = tip.labelColor;
-  const category = tip.type === 'companion' ? 'Companions' : (tip.principleShort ?? 'Tip');
+function CardFace({ tip, index }: { tip: PermaTip; index: number }) {
   return (
     <div style={{
       background: 'rgba(255,255,255,0.94)',
@@ -34,63 +23,36 @@ function CardFace({ tip }: { tip: PermaTip }) {
       height: 176,
       display: 'flex',
       flexDirection: 'column',
-      gap: 10,
+      gap: 12,
       overflow: 'hidden',
       boxShadow: T.glassCardSh,
     }}>
-
-      {/* Label + icon row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+      {/* Icon + tip number */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{
-          fontSize: 11, fontWeight: 700,
-          color: accent,
-          background: tint(accent, 0.10),
-          borderRadius: T.rPill, padding: '3px 10px',
-          flexShrink: 0, whiteSpace: 'nowrap',
-        }}>
-          {category}
-        </span>
-        <span style={{
-          fontSize: 18, lineHeight: 1, flexShrink: 0,
           width: 34, height: 34, borderRadius: '50%',
-          background: tint(accent, 0.10),
+          background: 'rgba(46,125,50,0.10)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }} aria-hidden="true">{tip.icon}</span>
+          flexShrink: 0,
+        }}>
+          <Sprout size={18} color={T.green} strokeWidth={2} aria-hidden="true" />
+        </span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: T.green, letterSpacing: 0.2 }}>
+          Tip {index + 1}
+        </span>
       </div>
 
-      {/* Title */}
+      {/* Tip text */}
       <p style={{
-        margin: 0, fontSize: 15, fontWeight: 800,
-        color: T.text, lineHeight: 1.3, letterSpacing: -0.3,
-      }}>
-        {tip.title}
-      </p>
-
-      {/* Body */}
-      <p style={{
-        margin: 0, fontSize: 12.5, color: T.sub,
-        lineHeight: 1.65, flex: 1,
+        margin: 0, fontSize: 14, color: T.text,
+        lineHeight: 1.6, flex: 1,
         display: '-webkit-box',
-        WebkitLineClamp: 3,
+        WebkitLineClamp: 4,
         WebkitBoxOrient: 'vertical',
         overflow: 'hidden',
       } as React.CSSProperties}>
         {tip.body}
       </p>
-
-      {/* Companion tags */}
-      {tip.type === 'companion' && tip.plants && (
-        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-          {tip.plants.slice(0, 3).map(p => (
-            <span key={p} style={{
-              fontSize: 10, fontWeight: 700, color: accent,
-              background: tint(accent, 0.10),
-              border: `1px solid ${tint(accent, 0.22)}`,
-              borderRadius: T.rPill, padding: '2px 9px',
-            }}>{p}</span>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -199,7 +161,7 @@ export function PermaTipsCarousel({
               flex: '0 0 86%',
               scrollSnapAlign: 'center',
             }}>
-            <CardFace tip={tip} />
+            <CardFace tip={tip} index={i} />
           </motion.div>
         ))}
       </div>
@@ -214,7 +176,7 @@ export function PermaTipsCarousel({
               aria-label={`Go to tip ${i + 1}`}
               aria-current={i === active ? 'true' : undefined}
               style={{
-                padding: 6, border: 'none', background: 'none',
+                padding: '11px 9px', border: 'none', background: 'none',
                 cursor: 'pointer', lineHeight: 0,
               }}>
               <motion.span

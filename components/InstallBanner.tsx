@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Sprout } from 'lucide-react';
 import { T } from '@/lib/theme';
 
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
@@ -64,7 +65,7 @@ export function InstallBanner() {
             display: 'flex', alignItems: 'center', gap: 10,
             padding: '8px 14px',
           }}>
-            <span style={{ fontSize: 15, flexShrink: 0 }}>🌿</span>
+            <Sprout size={16} strokeWidth={2} color={T.green} style={{ flexShrink: 0 }} aria-hidden="true" />
             <p style={{ flex: 1, margin: 0, fontSize: 12, fontWeight: 500, color: T.text, lineHeight: 1.4 }}>
               {showIOS
                 ? 'Tap Share → Add to Home Screen for the full app'

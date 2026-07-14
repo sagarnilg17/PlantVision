@@ -7,13 +7,13 @@ import { NativeAuthBridge } from '@/components/NativeAuthBridge';
 const sans = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-sans', weight: ['400', '500', '600', '700', '800'] });
 
 export const metadata: Metadata = {
-  title: 'Plant Care',
+  title: 'Maali',
   description: 'Identify your plants, track watering, and diagnose health issues.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Plant Care',
+    title: 'Maali',
   },
   other: {
     'mobile-web-app-capable': 'yes',
@@ -23,6 +23,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  viewportFit: 'cover',
+  colorScheme: 'light',
   themeColor: '#2E7D32',
 };
 

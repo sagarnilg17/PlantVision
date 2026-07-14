@@ -1,10 +1,14 @@
 apply plugin: 'com.android.application'
 
+def keystorePropsFile = rootProject.file("keystore.properties")
+def keystoreProps = new Properties()
+if (keystorePropsFile.exists()) { keystoreProps.load(new FileInputStream(keystorePropsFile)) }
+
 android {
-    namespace = "com.plantvision.app"
+    namespace = "com.maali.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.plantvision.app"
+        applicationId "com.maali.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -16,9 +20,23 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (keystorePropsFile.exists()) {
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
+            // Minify/shrink left off for a guaranteed-working release APK; enable
+            // (minifyEnabled true + shrinkResources true) and smoke-test on a device
+            // to cut APK size once you can verify the R8-processed build runs.
             minifyEnabled false
+            signingConfig keystorePropsFile.exists() ? signingConfigs.release : signingConfigs.debug
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }

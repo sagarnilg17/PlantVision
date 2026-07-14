@@ -9,6 +9,7 @@ import { Nav } from '@/components/Nav';
 import { InstallBanner } from '@/components/InstallBanner';
 import { PermaTipsCarousel } from '@/components/PermaTipsCarousel';
 import { Snackbar, type SnackState } from '@/components/Snackbar';
+import { Droplet, AlertTriangle, Check, Sprout, Flower2 } from 'lucide-react';
 import { T } from '@/lib/theme';
 
 const SPRING_UI  = { type: 'spring' as const, bounce: 0, duration: 0.35 };
@@ -102,7 +103,7 @@ function AttentionCard({ p, idx, userId, onRefresh, onSnack }: {
       await supabase.from('plants').update({ last_watered: today, next_watering_due: due }).eq('id', p.id);
       setWatered(true);
       onSnack({
-        message: `💧 ${p.nickname || p.plant_name} watered`,
+        message: `${p.nickname || p.plant_name} watered`,
         onUndo: async () => {
           if (row?.id) await supabase.from('care_log').delete().eq('id', row.id);
           await supabase.from('plants').update({ last_watered: prevWatered, next_watering_due: prevDue }).eq('id', p.id);
@@ -150,7 +151,10 @@ function AttentionCard({ p, idx, userId, onRefresh, onSnack }: {
           borderRadius: T.rPill, padding: '3px 9px',
           fontSize: 11, fontWeight: 600, marginTop: 5,
         }}>
-          {overdue ? '💧' : '⚠️'} {urgencyLabel}
+          {overdue
+            ? <Droplet size={12} strokeWidth={2.4} aria-hidden="true" />
+            : <AlertTriangle size={12} strokeWidth={2.4} aria-hidden="true" />}
+          {urgencyLabel}
         </span>
       </div>
 
@@ -174,14 +178,14 @@ function AttentionCard({ p, idx, userId, onRefresh, onSnack }: {
           }}>
             {watering
               ? <div style={{ width: 13, height: 13, border: '2px solid rgba(255,255,255,0.4)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-              : '💧'}
+              : <Droplet size={16} strokeWidth={2.2} color="#fff" aria-hidden="true" />}
           </div>
         </button>
       )}
 
       {watered && (
-        <div style={{ width: 34, height: 34, borderRadius: '50%', background: T.greenLight, border: `1px solid ${T.greenMid}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>
-          ✓
+        <div style={{ width: 34, height: 34, borderRadius: '50%', background: T.greenLight, border: `1px solid ${T.greenMid}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Check size={16} strokeWidth={2.6} color={T.green} aria-hidden="true" />
         </div>
       )}
 
@@ -352,7 +356,7 @@ export default function Dashboard() {
                   background: T.glassCard, border: T.glassCardBd, boxShadow: T.glassCardSh,
                   borderRadius: T.r, padding: '24px 20px', textAlign: 'center', marginBottom: 4,
                 }}>
-                <div style={{ fontSize: 38, marginBottom: 10 }}>🌿</div>
+                <Sprout size={38} strokeWidth={1.6} color={T.green} style={{ margin: '0 auto 10px' }} aria-hidden="true" />
                 <p style={{ margin: '0 0 5px', fontSize: 16, fontWeight: 700, color: T.text }}>Your garden is thriving</p>
                 <p style={{ margin: 0, fontSize: 13, color: T.sub, lineHeight: 1.6 }}>
                   No plants need care right now.
@@ -369,7 +373,7 @@ export default function Dashboard() {
                   background: T.glassCard, border: T.glassCardBd, boxShadow: T.glassCardSh,
                   borderRadius: T.r, padding: '32px 20px', textAlign: 'center', marginBottom: 4,
                 }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>🪴</div>
+                <Flower2 size={40} strokeWidth={1.6} color={T.green} style={{ margin: '0 auto 12px' }} aria-hidden="true" />
                 <p style={{ margin: '0 0 6px', fontSize: 17, fontWeight: 800, color: T.text }}>Start your garden</p>
                 <p style={{ margin: 0, fontSize: 13, color: T.sub, lineHeight: 1.6 }}>
                   Scan a plant to track its care and keep it healthy.

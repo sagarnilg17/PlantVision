@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
 import type { Map as LMap, Marker as LMarker } from 'leaflet';
+import { MapPin } from 'lucide-react';
 import { T } from '@/lib/theme';
 
 export type PickedLocation = { lat: number; lng: number; place: string };
@@ -218,8 +219,8 @@ export function LocationPicker({
           {status === 'locating' ? 'Locating…' : 'Use my location'}
         </button>
 
-        <p aria-live="polite" style={{ margin: 0, fontSize: 13, color: place ? T.text : T.muted, fontWeight: place ? 600 : 400 }}>
-          {place ? `📍 ${place}` : 'Tap the map to choose your area'}
+        <p aria-live="polite" style={{ margin: 0, fontSize: 13, color: place ? T.text : T.muted, fontWeight: place ? 600 : 400, display: 'flex', alignItems: 'center', gap: 5 }}>
+          {place ? <><MapPin size={14} strokeWidth={2} color={T.green} aria-hidden="true" /> {place}</> : 'Tap the map to choose your area'}
         </p>
       </div>
     </div>

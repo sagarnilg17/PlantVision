@@ -7,7 +7,10 @@ import { computeWatering, nextWateringDate, type LightLevel } from '@/lib/careEn
 import { DiagnosisCard, type Diagnosis } from '@/components/DiagnosisCard';
 import { apiFetch } from '@/lib/api';
 import { Nav } from '@/components/Nav';
+import { Camera, X, Cloud, CloudSun, Sun, type LucideIcon } from 'lucide-react';
 import { T } from '@/lib/theme';
+
+const LIGHT_ICON: Record<string, LucideIcon> = { low: Cloud, medium: CloudSun, bright: Sun };
 
 type Candidate = { scientificName: string; commonName: string; genus: string; family: string; score: number };
 type Care = { wateringFrequency: string; wateringTips: string; potSize: string; potSizeReason: string; careTips: string[]; toxicToAnimals?: boolean; toxicToHumans?: boolean; toxicityNotes?: string };
@@ -223,7 +226,7 @@ export default function ScanPage() {
             {/* Placeholder card (camera lives in the full-screen overlay below) */}
             {!streaming && (
               <div style={{ borderRadius: T.r, overflow: 'hidden', aspectRatio: '4/3', marginBottom: 14, border: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, background: T.greenLight }}>
-                <span style={{ fontSize: 36 }}>📷</span>
+                <Camera size={36} strokeWidth={1.6} color={T.green} aria-hidden="true" />
                 <span style={{ color: T.sub, fontSize: 13, fontWeight: 500 }}>3 angles · best identification</span>
               </div>
             )}
@@ -235,9 +238,9 @@ export default function ScanPage() {
 
               {/* Top: close + angle guidance */}
               <div style={{ position: 'relative', zIndex: 2, padding: 'calc(env(safe-area-inset-top, 0px) + 14px) 16px 0', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                <button onClick={stopCamera}
-                  style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(10,26,10,0.6)', border: 'none', color: '#fff', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, backdropFilter: 'blur(6px)' }}>
-                  ✕
+                <button onClick={stopCamera} aria-label="Close camera"
+                  style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(10,26,10,0.6)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, backdropFilter: 'blur(6px)' }}>
+                  <X size={18} strokeWidth={2.4} aria-hidden="true" />
                 </button>
                 <div style={{ flex: 1, background: 'rgba(10,26,10,0.6)', borderRadius: T.rSm, padding: '10px 14px', backdropFilter: 'blur(6px)' }}>
                   <p style={{ margin: 0, color: '#fff', fontSize: 14, fontWeight: 600 }}>
@@ -382,9 +385,7 @@ export default function ScanPage() {
                       background: light === l.key ? T.greenLight : T.surface,
                       cursor: 'pointer', transition: 'border-color 0.15s, background 0.15s',
                     }}>
-                    <div style={{ fontSize: 18, marginBottom: 4 }}>
-                      {l.key === 'low' ? '🌥️' : l.key === 'medium' ? '⛅' : '☀️'}
-                    </div>
+                    {(() => { const I = LIGHT_ICON[l.key] ?? Sun; return <I size={18} strokeWidth={2} color={light === l.key ? T.green : T.sub} style={{ marginBottom: 4 }} aria-hidden="true" />; })()}
                     <div style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{l.label}</div>
                     <div style={{ fontSize: 10, color: T.muted, marginTop: 2, lineHeight: 1.3 }}>{l.sub}</div>
                   </button>
