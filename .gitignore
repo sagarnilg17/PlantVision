@@ -54,3 +54,9 @@ android/keystore.properties
 
 # built APKs (artifacts, not source)
 *.apk
+*.idsig
+
+# local AI tooling (Claude Code, agents, design tools)
+.claude/
+.agents/
+.impeccable/
