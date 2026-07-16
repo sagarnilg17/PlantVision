@@ -4,13 +4,10 @@ import { getServerUser } from '@/lib/supabaseServer';
 import { getGemini, GEMINI_MODEL } from '@/lib/gemini';
 import { getCachedCare, setCachedCare } from '@/lib/speciesCache';
 
-// Cap total base64 payload (~15 MB) so the identify endpoint can't be used to
-// fan out huge requests to the paid PlantNet / Gemini APIs.
 const MAX_TOTAL_CHARS = 20_000_000;
 
 const CARE_PROMPT = `You are a houseplant care expert. Give concise, practical care info for the plant below. Use "Every X days" or "Every X-Y days" for wateringFrequency. Provide exactly 3 short careTips. toxicityNotes: one sentence naming which animals/people it is toxic to and the effect, or "Non-toxic to pets and humans."`;
 
-// Native structured output — no more regex-scraping JSON from free text.
 const CARE_SCHEMA = {
   type: Type.OBJECT,
   properties: {
@@ -27,6 +24,53 @@ const CARE_SCHEMA = {
   propertyOrdering: ['wateringFrequency', 'wateringTips', 'potSize', 'potSizeReason', 'careTips', 'toxicToAnimals', 'toxicToHumans', 'toxicityNotes'],
 };
 
+const DIAG_PROMPT = `You are a plant pathology assistant. The species is already identified — do NOT re-identify it. Examine ONLY visible stress and disease symptoms: leaf colour, spots, wilting, pests, soil surface, stem condition.
+
+Rules:
+- overallHealth is one of: "healthy", "mild stress", "needs attention", "urgent".
+- Give 2-3 differentials ranked by likelihood ("high" | "medium" | "low"). NEVER give a single confident verdict.
+- Use hedged language ("possible", "consistent with").
+- Always populate missingEvidence — roots, soil moisture, and smell are invisible in photos.
+- Give 2-3 clarifyingQuestions a non-expert can answer (id like "q1").`;
+
+const DIAG_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    overallHealth: { type: Type.STRING },
+    observations:  { type: Type.ARRAY, items: { type: Type.STRING } },
+    differentials: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          cause:           { type: Type.STRING },
+          likelihood:      { type: Type.STRING },
+          evidence:        { type: Type.STRING },
+          missingEvidence: { type: Type.STRING },
+        },
+        required: ['cause', 'likelihood', 'evidence', 'missingEvidence'],
+        propertyOrdering: ['cause', 'likelihood', 'evidence', 'missingEvidence'],
+      },
+    },
+    clarifyingQuestions: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id:       { type: Type.STRING },
+          question: { type: Type.STRING },
+          ifYes:    { type: Type.STRING },
+          ifNo:     { type: Type.STRING },
+        },
+        required: ['id', 'question', 'ifYes', 'ifNo'],
+        propertyOrdering: ['id', 'question', 'ifYes', 'ifNo'],
+      },
+    },
+  },
+  required: ['overallHealth', 'observations', 'differentials', 'clarifyingQuestions'],
+  propertyOrdering: ['overallHealth', 'observations', 'differentials', 'clarifyingQuestions'],
+};
+
 export async function POST(req: NextRequest) {
   const user = await getServerUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -39,9 +83,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Images too large' }, { status: 413 });
     }
 
-    // 1. Build multipart body manually so each image part carries the correct
-    //    Content-Type header — Node.js's FormData/File globals don't reliably
-    //    include per-part MIME types when serialised by undici's fetch.
+    // 1. Build multipart body for PlantNet
     const boundary = `PlantNetBoundary${Date.now().toString(16)}`;
     const parts: Buffer[] = [];
 
@@ -82,7 +124,7 @@ export async function POST(req: NextRequest) {
     const results: Array<Record<string, unknown>> = pnData.results ?? [];
     if (results.length === 0) throw new Error('PlantNet could not identify the plant');
 
-    // 2. Build top-3 candidates from PlantNet results
+    // 2. Top-3 candidates
     type PNSpecies = { scientificNameWithoutAuthor?: string; scientificName?: string; commonNames?: string[]; genus?: { scientificNameWithoutAuthor?: string }; family?: { scientificNameWithoutAuthor?: string } };
     const candidates = results.slice(0, 3).map((r) => {
       const sp = (r.species ?? {}) as PNSpecies;
@@ -96,22 +138,46 @@ export async function POST(req: NextRequest) {
     });
     const topMatch = candidates[0];
 
-    // 3. Care info — served from the species cache when available, else generated
-    //    by Gemini (structured JSON) and cached for the next scan of this species.
-    let care = await getCachedCare(topMatch.scientificName);
-    if (!care) {
-      const ai = getGemini();
-      if (!ai) return NextResponse.json({ error: 'AI is not configured (GEMINI_API_KEY missing)' }, { status: 500 });
-      const careRes = await ai.models.generateContent({
-        model: GEMINI_MODEL,
-        contents: `${CARE_PROMPT}\n\nPlant: ${topMatch.commonName} (${topMatch.scientificName})`,
-        config: { responseMimeType: 'application/json', responseSchema: CARE_SCHEMA },
-      });
-      care = JSON.parse(careRes.text ?? '{}');
-      await setCachedCare(topMatch.scientificName, topMatch.commonName, care);
-    }
+    // 3. Run care + diagnosis in parallel — eliminates one sequential Gemini round-trip
+    const ai = getGemini();
 
-    return NextResponse.json({ candidates, topMatch, care });
+    const [care, diagnosis] = await Promise.all([
+      // Care: served from species cache when available, otherwise generate and cache it
+      (async () => {
+        let c = await getCachedCare(topMatch.scientificName);
+        if (!c) {
+          if (!ai) return null;
+          const careRes = await ai.models.generateContent({
+            model: GEMINI_MODEL,
+            contents: `${CARE_PROMPT}\n\nPlant: ${topMatch.commonName} (${topMatch.scientificName})`,
+            config: { responseMimeType: 'application/json', responseSchema: CARE_SCHEMA },
+          });
+          c = JSON.parse(careRes.text ?? '{}');
+          await setCachedCare(topMatch.scientificName, topMatch.commonName, c);
+        }
+        return c;
+      })(),
+      // Diagnosis: always fresh — examines visible symptoms in the actual photos
+      (async () => {
+        if (!ai) return null;
+        const diagParts: Array<Record<string, unknown>> = images.slice(0, 3).map((img: string) => {
+          const [header, b64] = img.split(',');
+          const mimeType = header.match(/data:(.*);/)?.[1] ?? 'image/jpeg';
+          return { inlineData: { mimeType, data: b64 } };
+        });
+        diagParts.push({ text: `${DIAG_PROMPT}\n\nIdentified species: ${topMatch.commonName}. Focus on health symptoms only.` });
+        const res = await ai.models.generateContent({
+          model: GEMINI_MODEL,
+          contents: [{ role: 'user', parts: diagParts }],
+          config: { responseMimeType: 'application/json', responseSchema: DIAG_SCHEMA },
+        });
+        return JSON.parse(res.text ?? '{}');
+      })(),
+    ]);
+
+    if (!care) return NextResponse.json({ error: 'AI is not configured (GEMINI_API_KEY missing)' }, { status: 500 });
+
+    return NextResponse.json({ candidates, topMatch, care, diagnosis });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json({ error: message }, { status: 500 });

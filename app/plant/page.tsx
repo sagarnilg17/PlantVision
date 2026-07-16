@@ -15,6 +15,7 @@ import {
   AlertTriangle, ShieldCheck, ArrowLeft, Pencil, Trash2, RefreshCw, type LucideIcon,
 } from 'lucide-react';
 import { T } from '@/lib/theme';
+import { DiagnosisCard, type Diagnosis } from '@/components/DiagnosisCard';
 
 const SPRING_UI   = { type: 'spring' as const, bounce: 0,    duration: 0.35 };
 const SPRING_TAP  = { type: 'spring' as const, bounce: 0,    duration: 0.18 };
@@ -27,6 +28,7 @@ type Plant = {
   light_level: string | null; watering_frequency: string; watering_tips: string;
   pot_size: string; pot_size_reason: string; care_tips: string[]; confidence: string;
   toxicity_info: string | null;
+  plant_health: string | null; plant_health_details: string | null;
 };
 type CareLog = { id: string; action: string; created_at: string };
 type Checkin = { id: string; image_urls: string[]; created_at: string; notes: string | null };
@@ -210,6 +212,13 @@ export default function PlantDetail() {
     catch { return null; }
   })();
   const isToxic = toxicity ? (toxicity.animals || toxicity.humans) : false;
+
+  const storedDiagnosis = (() => {
+    if (!plant.plant_health_details) return null;
+    try { return JSON.parse(plant.plant_health_details) as Diagnosis; }
+    catch { return null; }
+  })();
+  const showDiagnosis = storedDiagnosis && plant.plant_health && plant.plant_health !== 'healthy';
 
   const QUICK = [
     { action: 'watered',    Icon: Droplet, label: 'Watered' },
@@ -407,6 +416,16 @@ export default function PlantDetail() {
               </div>
             </div>
           </GlassCard>
+        )}
+
+        {/* ── Persistent health diagnosis from last scan ── */}
+        {showDiagnosis && (
+          <motion.div
+            initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ ...SPRING_UI, delay: 0.11 }}>
+            <p style={{ margin: '0 0 10px 2px', fontSize: 13, fontWeight: 700, color: T.text }}>Last health scan</p>
+            <DiagnosisCard diagnosis={storedDiagnosis!} />
+          </motion.div>
         )}
 
         {/* ── Quick log ── */}

@@ -78,7 +78,11 @@ function PlantCard({ p, idx, userId, onRefresh, lat, weather }: {
   const overdue = d !== null && d <= 0;
   const wl      = d !== null ? waterLabel(d) : null;
   const hm      = healthMeta(p.plant_health);
-  const firstNote = p.plant_health_details ? p.plant_health_details.split(';')[0].trim() : null;
+  const firstNote = (() => {
+    if (!p.plant_health_details) return null;
+    try { return (JSON.parse(p.plant_health_details) as { observations?: string[] }).observations?.[0] ?? null; }
+    catch { return p.plant_health_details.split(';')[0].trim(); }
+  })();
   const isToxic = (() => {
     if (!p.toxicity_info) return false;
     try { const t = JSON.parse(p.toxicity_info); return t.animals || t.humans; }

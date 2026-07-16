@@ -63,6 +63,11 @@ export default function ScanPage() {
   const [coords,    setCoords]    = useState<{ lat: number; lon: number } | null>(null);
   const [weather,   setWeather]   = useState<WeatherForecast | null>(null);
 
+  // Re-scan / health-check state
+  const [recheckId,    setRecheckId]    = useState<string | null>(null);
+  const [recheckPlant, setRecheckPlant] = useState<{ plant_name: string } | null>(null);
+  const [recheckReady, setRecheckReady] = useState(false);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) { router.push('/login'); return; }
@@ -88,9 +93,18 @@ export default function ScanPage() {
     } catch { setError('Camera permission denied.'); }
   }, []);
 
-  // FAB deep-links: /scan?mode=camera opens the camera, /scan?mode=upload opens the picker
+  // FAB deep-links: /scan?mode=camera or /scan?mode=upload; /scan?recheck=<id> for health update
   useEffect(() => {
-    const mode = new URLSearchParams(window.location.search).get('mode');
+    const params  = new URLSearchParams(window.location.search);
+    const mode    = params.get('mode');
+    const recheck = params.get('recheck');
+
+    if (recheck) {
+      setRecheckId(recheck);
+      supabase.from('plants').select('plant_name').eq('id', recheck).single()
+        .then(({ data }) => { if (data) setRecheckPlant(data as { plant_name: string }); });
+      window.history.replaceState(null, '', '/scan');
+    }
     if (mode === 'camera') startCamera();
     else if (mode === 'upload') fileRef.current?.click();
     if (mode) window.history.replaceState(null, '', '/scan');
@@ -143,25 +157,56 @@ export default function ScanPage() {
   const reset = () => {
     setShots([]); setAngleIdx(0); setAnalysis(null);
     setChosenIdx(0); setLight(null); setDiagnosis(null); setError(null);
+    setRecheckReady(false);
   };
 
   const analyse = async () => {
     if (shots.length < 3) return;
     setLoading(true); setError(null);
     try {
-      const res  = await apiFetch('/api/vision', { images: shots, organs: ANGLES.map(a => a.organ) });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      setAnalysis(data); setChosenIdx(0);
-      try {
-        const dRes  = await apiFetch('/api/diagnose', { images: shots, speciesName: data.topMatch?.commonName });
+      if (recheckId) {
+        // Health update — skip PlantNet, just re-diagnose the current photos
+        const dRes  = await apiFetch('/api/diagnose', { images: shots, speciesName: recheckPlant?.plant_name });
         const dData = await dRes.json();
-        if (!dData.error && dData.diagnosis) setDiagnosis(dData.diagnosis);
-      } catch { /* diagnosis is best-effort */ }
+        if (dData.error) throw new Error(dData.error);
+        if (dData.diagnosis) setDiagnosis(dData.diagnosis);
+        setRecheckReady(true);
+      } else {
+        // Full scan — care + diagnosis run in parallel on the server
+        const res  = await apiFetch('/api/vision', { images: shots, organs: ANGLES.map(a => a.organ) });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        setAnalysis(data); setChosenIdx(0);
+        if (data.diagnosis) setDiagnosis(data.diagnosis);
+      }
     } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Analysis failed'); }
     finally { setLoading(false); }
   };
 
+  // Save for re-scan health update — updates existing plant record
+  const reSave = async () => {
+    if (!recheckId || !userId) return;
+    setLoading(true);
+    try {
+      const urls: string[] = [];
+      for (let i = 0; i < shots.length; i++) {
+        const blob = await (await fetch(shots[i])).blob();
+        const path = `${userId}/${Date.now()}_rescan_${i}.jpg`;
+        const { error: upErr } = await supabase.storage.from('plant-photos').upload(path, blob);
+        if (!upErr) urls.push(supabase.storage.from('plant-photos').getPublicUrl(path).data.publicUrl);
+      }
+      const updateData: Record<string, unknown> = {
+        plant_health: diagnosis?.overallHealth ?? null,
+        plant_health_details: diagnosis ? JSON.stringify(diagnosis) : null,
+      };
+      if (urls.length > 0) updateData.image_urls = urls;
+      await supabase.from('plants').update(updateData).eq('id', recheckId);
+      router.push(`/plant?id=${recheckId}`);
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Update failed'); }
+    finally { setLoading(false); }
+  };
+
+  // Save for new plant — always INSERT
   const save = async () => {
     if (!analysis || !userId || !light) return;
     setLoading(true);
@@ -169,7 +214,6 @@ export default function ScanPage() {
       const chosen = analysis.candidates[chosenIdx];
       const care   = analysis.care;
 
-      // Upload plant photos
       const urls: string[] = [];
       for (let i = 0; i < shots.length; i++) {
         const blob = await (await fetch(shots[i])).blob();
@@ -185,7 +229,7 @@ export default function ScanPage() {
         plant_name: chosen.commonName, scientific_name: chosen.scientificName,
         confidence: pct(chosen.score), light_level: light,
         plant_health: diagnosis?.overallHealth ?? null,
-        plant_health_details: diagnosis?.observations?.join('; ') ?? null,
+        plant_health_details: diagnosis ? JSON.stringify(diagnosis) : null,
         watering_frequency: `Every ${engine.intervalDays} days`, watering_tips: care.wateringTips,
         pot_size: care.potSize, pot_size_reason: care.potSizeReason,
         care_tips: care.careTips, image_urls: urls,
@@ -193,7 +237,6 @@ export default function ScanPage() {
         next_watering_due: due,
       }).select('id').single();
 
-      // Toxicity — best-effort update (requires: ALTER TABLE plants ADD COLUMN IF NOT EXISTS toxicity_info text;)
       if (inserted?.id && care.toxicityNotes) {
         const toxInfo = JSON.stringify({ animals: care.toxicToAnimals ?? false, humans: care.toxicToHumans ?? false, notes: care.toxicityNotes });
         await supabase.from('plants').update({ toxicity_info: toxInfo }).eq('id', inserted.id);
@@ -204,6 +247,11 @@ export default function ScanPage() {
     finally { setLoading(false); }
   };
 
+  const isRecheck = !!recheckId;
+  const headerTitle = isRecheck
+    ? (recheckPlant ? `Health check: ${recheckPlant.plant_name}` : 'Health check')
+    : 'Scan a Plant';
+
   return (
     <main style={{ maxWidth: 480, margin: '0 auto', minHeight: '100vh', background: T.bg, paddingBottom: 88 }}>
 
@@ -213,28 +261,29 @@ export default function ScanPage() {
           style={{ width: 36, height: 36, borderRadius: '50%', background: T.bg, border: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 16, color: T.text, flexShrink: 0 }}>
           ←
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: T.text, margin: 0 }}>Scan a Plant</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: T.text, margin: 0 }}>{headerTitle}</h1>
       </div>
 
       <div style={{ padding: '16px 16px 0' }}>
 
         {/* ── Capture phase ── */}
-        {!analysis && (
+        {!analysis && !recheckReady && (
           <>
-            {/* Placeholder card (camera lives in the full-screen overlay below) */}
+            {/* Placeholder card */}
             {!streaming && (
               <div style={{ borderRadius: T.r, overflow: 'hidden', aspectRatio: '4/3', marginBottom: 14, border: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, background: T.greenLight }}>
                 <Camera size={36} strokeWidth={1.6} color={T.green} aria-hidden="true" />
-                <span style={{ color: T.sub, fontSize: 13, fontWeight: 500 }}>3 angles · best identification</span>
+                <span style={{ color: T.sub, fontSize: 13, fontWeight: 500 }}>
+                  {isRecheck ? '3 photos · best health assessment' : '3 angles · best identification'}
+                </span>
               </div>
             )}
 
-            {/* ── Full-screen camera ── */}
+            {/* Full-screen camera */}
             <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: T.text, display: streaming ? 'flex' : 'none', flexDirection: 'column' }}>
               <video ref={videoRef} autoPlay playsInline muted
                 style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
 
-              {/* Top: close + angle guidance */}
               <div style={{ position: 'relative', zIndex: 2, padding: 'calc(env(safe-area-inset-top, 0px) + 14px) 16px 0', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                 <button onClick={stopCamera} aria-label="Close camera"
                   style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(10,26,10,0.6)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, backdropFilter: 'blur(6px)' }}>
@@ -248,7 +297,6 @@ export default function ScanPage() {
                 </div>
               </div>
 
-              {/* Bottom: captured thumbnails + shutter */}
               <div style={{ position: 'relative', zIndex: 2, marginTop: 'auto', padding: '0 16px calc(env(safe-area-inset-bottom, 0px) + 28px)' }}>
                 {shots.length > 0 && (
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 18 }}>
@@ -321,7 +369,9 @@ export default function ScanPage() {
             {shots.length >= 3 && (
               <button onClick={analyse} disabled={loading}
                 style={{ width: '100%', padding: 15, background: loading ? T.greenMid : T.green, color: '#fff', border: 'none', borderRadius: T.rSm, fontSize: 15, fontWeight: 600, cursor: loading ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                {loading ? <><Spinner /> Identifying…</> : 'Identify Plant'}
+                {loading
+                  ? <><Spinner /> {isRecheck ? 'Analysing…' : 'Identifying…'}</>
+                  : isRecheck ? 'Check Health' : 'Identify Plant'}
               </button>
             )}
           </>
@@ -334,7 +384,37 @@ export default function ScanPage() {
           </div>
         )}
 
-        {/* ── Results phase ── */}
+        {/* ── Recheck results ── */}
+        {recheckReady && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, animation: 'fadeUp 0.3s ease' }}>
+            {recheckPlant && (
+              <div style={{ background: T.greenLight, border: `1px solid ${T.greenMid}`, borderRadius: T.rSm, padding: '10px 14px' }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: T.greenDark }}>
+                  Updating health for {recheckPlant.plant_name}
+                </p>
+              </div>
+            )}
+
+            {diagnosis && <DiagnosisCard diagnosis={diagnosis} />}
+
+            <button onClick={reSave} disabled={loading}
+              style={{
+                width: '100%', padding: 15, border: 'none', borderRadius: T.rSm,
+                background: loading ? T.greenMid : T.green, color: loading ? T.muted : '#fff',
+                fontSize: 15, fontWeight: 600, cursor: loading ? 'default' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              }}>
+              {loading ? <><Spinner /> Saving…</> : 'Save health update'}
+            </button>
+
+            <button onClick={reset}
+              style={{ width: '100%', padding: 14, background: T.surface, color: T.sub, border: `1px solid ${T.border}`, borderRadius: T.rSm, fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
+              Take new photos
+            </button>
+          </div>
+        )}
+
+        {/* ── Full scan results ── */}
         {analysis && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, animation: 'fadeUp 0.3s ease' }}>
             <p style={{ fontSize: 11, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, margin: 0, fontWeight: 700 }}>Which one is it?</p>

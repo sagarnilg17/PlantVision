@@ -18,6 +18,8 @@ export type Diagnosis = {
   clarifyingQuestions: ClarifyingQ[];
 };
 
+type AnswerVal = 'yes' | 'partly' | 'no';
+
 const healthMeta = (h: string) =>
   h === 'healthy'
     ? { color: T.green,   bg: T.greenLight,  border: T.greenMid,   label: 'Healthy' }
@@ -31,13 +33,17 @@ const likMeta = (l: string) =>
   : { color: T.muted, label: 'Low' };
 
 export function DiagnosisCard({ diagnosis }: { diagnosis: Diagnosis }) {
-  const [answers, setAnswers] = useState<Record<string, 'yes' | 'no'>>({});
+  const [answers, setAnswers] = useState<Record<string, AnswerVal>>({});
 
   const leaning: Record<string, number> = {};
   diagnosis.clarifyingQuestions.forEach(q => {
     const a = answers[q.id];
-    if (a === 'yes') leaning[q.ifYes] = (leaning[q.ifYes] ?? 0) + 1;
-    if (a === 'no')  leaning[q.ifNo]  = (leaning[q.ifNo]  ?? 0) + 1;
+    if (a === 'yes')    { leaning[q.ifYes] = (leaning[q.ifYes] ?? 0) + 1; }
+    if (a === 'no')     { leaning[q.ifNo]  = (leaning[q.ifNo]  ?? 0) + 1; }
+    if (a === 'partly') {
+      leaning[q.ifYes] = (leaning[q.ifYes] ?? 0) + 0.5;
+      leaning[q.ifNo]  = (leaning[q.ifNo]  ?? 0) + 0.5;
+    }
   });
   const topLeaning = Object.entries(leaning).sort((a, b) => b[1] - a[1])[0]?.[0];
   const answered   = Object.keys(answers).length;
@@ -115,30 +121,46 @@ export function DiagnosisCard({ diagnosis }: { diagnosis: Diagnosis }) {
                   <p style={{ margin: '0 0 8px', fontSize: 13, color: T.text, lineHeight: 1.55, fontWeight: ans ? 600 : 400 }}>
                     {qi + 1}. {q.question}
                   </p>
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {/* Yes */}
                     <button onClick={() => setAnswers(a => ({ ...a, [q.id]: 'yes' }))} aria-pressed={ans === 'yes'} style={{
                       flex: 1, padding: '9px 0', borderRadius: T.rSm, cursor: 'pointer',
                       border: `2px solid ${ans === 'yes' ? T.green : T.border}`,
                       background: ans === 'yes' ? T.greenLight : 'transparent',
                       color: ans === 'yes' ? T.green : T.sub,
-                      fontSize: 13, fontWeight: 700, transition: 'all 0.15s',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                      fontSize: 12, fontWeight: 700, transition: 'all 0.15s',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
                     }}>
-                      {ans === 'yes' && <Check size={15} strokeWidth={2.6} aria-hidden="true" />}Yes
+                      {ans === 'yes' && <Check size={13} strokeWidth={2.6} aria-hidden="true" />}Yes
                     </button>
+                    {/* Partly */}
+                    <button onClick={() => setAnswers(a => ({ ...a, [q.id]: 'partly' }))} aria-pressed={ans === 'partly'} style={{
+                      flex: 1, padding: '9px 0', borderRadius: T.rSm, cursor: 'pointer',
+                      border: `2px solid ${ans === 'partly' ? T.warn : T.border}`,
+                      background: ans === 'partly' ? T.warnLight : 'transparent',
+                      color: ans === 'partly' ? T.warn : T.sub,
+                      fontSize: 12, fontWeight: 700, transition: 'all 0.15s',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                    }}>
+                      {ans === 'partly' && <Check size={13} strokeWidth={2.6} aria-hidden="true" />}Partly
+                    </button>
+                    {/* No */}
                     <button onClick={() => setAnswers(a => ({ ...a, [q.id]: 'no' }))} aria-pressed={ans === 'no'} style={{
                       flex: 1, padding: '9px 0', borderRadius: T.rSm, cursor: 'pointer',
                       border: `2px solid ${ans === 'no' ? T.borderMid : T.border}`,
                       background: ans === 'no' ? T.bg : 'transparent',
                       color: ans === 'no' ? T.text : T.sub,
-                      fontSize: 13, fontWeight: 700, transition: 'all 0.15s',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                      fontSize: 12, fontWeight: 700, transition: 'all 0.15s',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
                     }}>
-                      {ans === 'no' && <X size={15} strokeWidth={2.6} aria-hidden="true" />}No
+                      {ans === 'no' && <X size={13} strokeWidth={2.6} aria-hidden="true" />}No
                     </button>
                   </div>
                   {ans === 'yes' && (
                     <p style={{ margin: '6px 0 0', fontSize: 12, color: T.green }}>→ suggests {q.ifYes}</p>
+                  )}
+                  {ans === 'partly' && (
+                    <p style={{ margin: '6px 0 0', fontSize: 12, color: T.warn }}>→ partially consistent with {q.ifYes}</p>
                   )}
                   {ans === 'no' && (
                     <p style={{ margin: '6px 0 0', fontSize: 12, color: T.sub }}>→ less likely: {q.ifNo}</p>
