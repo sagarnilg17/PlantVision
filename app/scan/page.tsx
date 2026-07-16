@@ -4,6 +4,7 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { computeWatering, nextWateringDate, type LightLevel } from '@/lib/careEngine';
+import { getLocation, fetchWeather, type WeatherForecast } from '@/lib/weather';
 import { DiagnosisCard, type Diagnosis } from '@/components/DiagnosisCard';
 import { apiFetch } from '@/lib/api';
 import { Nav } from '@/components/Nav';
@@ -59,6 +60,8 @@ export default function ScanPage() {
   const [light,     setLight]     = useState<LightLevel | null>(null);
   const [diagnosis, setDiagnosis] = useState<Diagnosis | null>(null);
   const [error,     setError]     = useState<string | null>(null);
+  const [coords,    setCoords]    = useState<{ lat: number; lon: number } | null>(null);
+  const [weather,   setWeather]   = useState<WeatherForecast | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -66,6 +69,16 @@ export default function ScanPage() {
       setUserId(data.user.id);
     });
   }, [router]);
+
+  // Quietly get location + rain forecast in the background so it's ready at save time.
+  useEffect(() => {
+    getLocation().then(async loc => {
+      if (!loc) return;
+      setCoords(loc);
+      const forecast = await fetchWeather(loc.lat, loc.lon);
+      setWeather(forecast);
+    });
+  }, []);
 
   const startCamera = useCallback(async () => {
     setError(null);
@@ -165,7 +178,7 @@ export default function ScanPage() {
         if (!upErr) urls.push(supabase.storage.from('plant-photos').getPublicUrl(path).data.publicUrl);
       }
 
-      const engine = computeWatering({ baseWateringFrequency: care.wateringFrequency, light, lat: null });
+      const engine = computeWatering({ baseWateringFrequency: care.wateringFrequency, light, lat: coords?.lat ?? null, rainForecast: weather });
       const due    = nextWateringDate(new Date().toISOString().slice(0, 10), engine.intervalDays);
       const { data: inserted } = await supabase.from('plants').insert({
         user_id: userId,

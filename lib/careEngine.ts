@@ -1,8 +1,10 @@
 // ============================================================
 // Care engine — deterministic reasoning layer (no AI).
-// Combines AI base watering + light level + season into a
-// concrete watering interval and contextual notes.
+// Combines AI base watering + light level + season + weather
+// into a concrete watering interval and contextual notes.
 // ============================================================
+
+import { rainyDaysInWindow, type WeatherForecast } from './weather';
 
 export type LightLevel = 'low' | 'medium' | 'bright';
 
@@ -31,6 +33,7 @@ export type CareEngineInput = {
   baseWateringFrequency: string;   // from AI, e.g. "Every 3-4 days"
   light: LightLevel | null;
   lat: number | null;
+  rainForecast?: WeatherForecast | null;
 };
 
 export type CareEngineOutput = {
@@ -60,6 +63,16 @@ export function computeWatering(input: CareEngineInput): CareEngineOutput {
   } else if (season === 'summer') {
     days = Math.max(1, days - 1);
     reason.push('Summer growth — slightly higher water demand.');
+  }
+
+  // Rain: if significant rain (≥2 mm) is forecast within the watering window,
+  // extend the interval by that many days (capped at +3 to avoid long delays).
+  if (input.rainForecast) {
+    const rainy = Math.min(3, rainyDaysInWindow(input.rainForecast, days));
+    if (rainy > 0) {
+      days += rainy;
+      reason.push(`Rain forecast in the next ${rainy} day(s) — next watering pushed out.`);
+    }
   }
 
   return { intervalDays: days, reason, season };

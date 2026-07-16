@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { computeWatering, nextWateringDate, type LightLevel } from '@/lib/careEngine';
+import { getLocation, fetchWeather, type WeatherForecast } from '@/lib/weather';
 import { Nav } from '@/components/Nav';
 import { Check, AlertTriangle, Droplet, Cloud, CloudSun, Sun, Flower2, type LucideIcon } from 'lucide-react';
 import { T } from '@/lib/theme';
@@ -65,8 +66,9 @@ function PlantAvatar({ plant, size = 64 }: { plant: Plant; size?: number }) {
   );
 }
 
-function PlantCard({ p, idx, userId, onRefresh }: {
+function PlantCard({ p, idx, userId, onRefresh, lat, weather }: {
   p: Plant; idx: number; userId: string; onRefresh: () => void;
+  lat: number | null; weather: WeatherForecast | null;
 }) {
   const router = useRouter();
   const [watering, setWatering] = useState(false);
@@ -88,7 +90,7 @@ function PlantCard({ p, idx, userId, onRefresh }: {
     if (watering || watered) return;
     setWatering(true);
     try {
-      const engine = computeWatering({ baseWateringFrequency: p.watering_frequency, light: (p.light_level as LightLevel) ?? null, lat: null });
+      const engine = computeWatering({ baseWateringFrequency: p.watering_frequency, light: (p.light_level as LightLevel) ?? null, lat, rainForecast: weather });
       const today  = new Date().toISOString().slice(0, 10);
       const due    = nextWateringDate(today, engine.intervalDays);
       await supabase.from('care_log').insert({ plant_id: p.id, user_id: userId, action: 'watered' });
@@ -266,6 +268,8 @@ export default function PlantsPage() {
   const [search,    setSearch]    = useState('');
   const [loadError, setLoadError] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [coords,    setCoords]    = useState<{ lat: number; lon: number } | null>(null);
+  const [weather,   setWeather]   = useState<WeatherForecast | null>(null);
 
   const load = useCallback(async (uid: string) => {
     setLoadError(false);
@@ -291,6 +295,15 @@ export default function PlantsPage() {
       load(data.user.id);
     });
   }, [router, load]);
+
+  useEffect(() => {
+    getLocation().then(async loc => {
+      if (!loc) return;
+      setCoords(loc);
+      const forecast = await fetchWeather(loc.lat, loc.lon);
+      setWeather(forecast);
+    });
+  }, []);
 
   const q = search.toLowerCase().trim();
   const filtered = q
@@ -406,6 +419,8 @@ export default function PlantsPage() {
                 key={p.id} p={p} idx={idx}
                 userId={userId as string}
                 onRefresh={() => userId && load(userId)}
+                lat={coords?.lat ?? null}
+                weather={weather}
               />
             ))}
           </AnimatePresence>
