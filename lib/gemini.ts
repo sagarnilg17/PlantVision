@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 
-// Gemini 2.5 Flash: fast, vision-capable, generous free tier, native JSON output.
-export const GEMINI_MODEL = 'gemini-2.5-flash';
+// Gemini 3.5 Flash: current GA release, vision-capable, native JSON output.
+export const GEMINI_MODEL = 'gemini-3.5-flash';
 
 let client: GoogleGenAI | null = null;
 
