@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { computeWatering, nextWateringDate, type LightLevel } from '@/lib/careEngine';
-import { getLocation, fetchWeather, type WeatherForecast } from '@/lib/weather';
+import { getLocation, fetchWeather, rainyDaysInWindow, type WeatherForecast } from '@/lib/weather';
 import { Nav } from '@/components/Nav';
-import { Check, AlertTriangle, Droplet, Cloud, CloudSun, Sun, Flower2, type LucideIcon } from 'lucide-react';
+import { Check, AlertTriangle, Droplet, Cloud, CloudRain, CloudSun, Sun, Flower2, type LucideIcon } from 'lucide-react';
 import { T } from '@/lib/theme';
 
 const LIGHT_ICON: Record<string, LucideIcon> = { low: Cloud, medium: CloudSun, bright: Sun };
@@ -189,6 +189,19 @@ function PlantCard({ p, idx, userId, onRefresh, lat, weather }: {
             </span>
           )}
         </div>
+
+        {/* Rain delay note */}
+        {weather && rainyDaysInWindow(weather, 5) > 0 && (() => {
+          const rainy = rainyDaysInWindow(weather, 5);
+          return (
+            <div style={{ marginTop: 5, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <CloudRain size={11} strokeWidth={2} color={T.green} aria-hidden="true" />
+              <span style={{ fontSize: 10, color: T.muted }}>
+                {rainy} rainy day{rainy > 1 ? 's' : ''} ahead · watering adjusted
+              </span>
+            </div>
+          );
+        })()}
 
         {/* Health */}
         {hm && hm.label !== 'Healthy' && (

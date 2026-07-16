@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Sprout } from 'lucide-react';
+import { Sprout, CloudRain } from 'lucide-react';
 import { T } from '@/lib/theme';
 import { getPersonalizedTips, type PermaTip, type PlantSummary } from '@/lib/permacultureTips';
 
@@ -10,44 +10,77 @@ const SPRING = { type: 'spring' as const, bounce: 0, duration: 0.35 };
 const GAP = 12;
 
 // ─── Card face ────────────────────────────────────────────────────────────────
-// Numbered tip + body text only. One library icon (no emoji), no category chips —
-// the heading is simply "Tip N" and the card's job is to surface the tip text.
 
-function CardFace({ tip, index }: { tip: PermaTip; index: number }) {
+function CardFace({ tip, index, isWeather = false }: { tip: PermaTip; index: number; isWeather?: boolean }) {
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.94)',
-      border: T.glassCardBd,
+      background: T.bg,
+      border: `1px solid ${T.greenMid}`,
       borderRadius: T.rLg,
-      padding: 20,
-      height: 176,
+      padding: '18px 20px 16px',
+      height: 200,
       display: 'flex',
       flexDirection: 'column',
-      gap: 12,
+      gap: 8,
       overflow: 'hidden',
+      position: 'relative',
       boxShadow: T.glassCardSh,
     }}>
-      {/* Icon + tip number */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      {/* Green top stripe */}
+      <div style={{
+        position: 'absolute', top: 0, left: 20, right: 20, height: 2,
+        background: isWeather ? T.green : T.greenMid,
+      }} />
+
+      {/* Watermark number */}
+      <span style={{
+        position: 'absolute', top: 6, right: 14,
+        fontSize: 68, fontWeight: 800, lineHeight: 1,
+        color: T.green, opacity: 0.055,
+        letterSpacing: -2, userSelect: 'none', pointerEvents: 'none',
+      } as React.CSSProperties}>
+        {String(index + 1).padStart(2, '0')}
+      </span>
+
+      {/* Icon + category label */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
         <span style={{
-          width: 34, height: 34, borderRadius: '50%',
+          width: 26, height: 26, borderRadius: '50%',
           background: 'rgba(46,125,50,0.10)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         }}>
-          <Sprout size={18} color={T.green} strokeWidth={2} aria-hidden="true" />
+          {isWeather
+            ? <CloudRain size={13} color={T.green} strokeWidth={2.2} aria-hidden="true" />
+            : <Sprout size={13} color={T.green} strokeWidth={2.2} aria-hidden="true" />}
         </span>
-        <span style={{ fontSize: 13, fontWeight: 700, color: T.green, letterSpacing: 0.2 }}>
-          Tip {index + 1}
-        </span>
+        {tip.principleShort && (
+          <span style={{
+            fontSize: 10, fontWeight: 700, color: T.muted,
+            letterSpacing: '0.8px', textTransform: 'uppercase',
+          }}>
+            {tip.principleShort}
+          </span>
+        )}
       </div>
 
-      {/* Tip text */}
+      {/* Title */}
       <p style={{
-        margin: 0, fontSize: 14, color: T.text,
-        lineHeight: 1.6, flex: 1,
+        margin: 0, fontSize: 14, fontWeight: 700, color: T.text,
+        lineHeight: 1.3, letterSpacing: -0.2,
         display: '-webkit-box',
-        WebkitLineClamp: 4,
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: 'vertical',
+        overflow: 'hidden',
+      } as React.CSSProperties}>
+        {tip.title}
+      </p>
+
+      {/* Body */}
+      <p style={{
+        margin: 0, fontSize: 13, color: T.sub,
+        lineHeight: 1.55, flex: 1,
+        display: '-webkit-box',
+        WebkitLineClamp: 3,
         WebkitBoxOrient: 'vertical',
         overflow: 'hidden',
       } as React.CSSProperties}>
@@ -60,19 +93,36 @@ function CardFace({ tip, index }: { tip: PermaTip; index: number }) {
 // ─── Scroll-snap pager ──────────────────────────────────────────────────────────
 
 export function PermaTipsCarousel({
-  plants, tips, heading, subject,
+  plants, tips, heading, subject, rainyDays,
 }: {
   plants?: PlantSummary[];
-  /** Explicit tip deck — overrides the plants-derived tips (e.g. single-plant tips) */
   tips?: PermaTip[];
-  /** Custom header title */
   heading?: string;
-  /** Short subject shown in the count badge (e.g. a plant's name) */
   subject?: string;
+  /** Number of rainy days in the forecast — prepends a weather card when > 0 */
+  rainyDays?: number | null;
 }) {
-  const allTips = useMemo(
+  const baseTips = useMemo(
     () => tips ?? getPersonalizedTips(plants ?? [], 8),
     [tips, plants],
+  );
+
+  const weatherTip: PermaTip | null = rainyDays && rainyDays > 0 ? {
+    id: 'weather',
+    type: 'energy',
+    principleShort: 'Weather',
+    icon: 'rain',
+    title: `${rainyDays} rainy day${rainyDays > 1 ? 's' : ''} in your forecast`,
+    body: rainyDays >= 3
+      ? 'Significant rain ahead — your watering schedule is adjusted. Let the soil tell you when it\'s ready, not the calendar.'
+      : 'Rain expected soon. Your next watering date is pushed out to account for natural moisture.',
+    bg: T.greenLight, border: T.greenMid, labelColor: T.green,
+  } : null;
+
+  const allTips = useMemo(
+    () => weatherTip ? [weatherTip, ...baseTips] : baseTips,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [baseTips, rainyDays],
   );
 
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -161,7 +211,7 @@ export function PermaTipsCarousel({
               flex: '0 0 86%',
               scrollSnapAlign: 'center',
             }}>
-            <CardFace tip={tip} index={i} />
+            <CardFace tip={tip} index={i} isWeather={tip.id === 'weather'} />
           </motion.div>
         ))}
       </div>

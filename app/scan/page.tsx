@@ -230,7 +230,7 @@ export default function ScanPage() {
             )}
 
             {/* ── Full-screen camera ── */}
-            <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: '#000', display: streaming ? 'flex' : 'none', flexDirection: 'column' }}>
+            <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: T.text, display: streaming ? 'flex' : 'none', flexDirection: 'column' }}>
               <video ref={videoRef} autoPlay playsInline muted
                 style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
 

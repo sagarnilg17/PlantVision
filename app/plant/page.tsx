@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { computeWatering, nextWateringDate, type LightLevel } from '@/lib/careEngine';
+import { getLocation, fetchWeather, rainyDaysInWindow, type WeatherForecast } from '@/lib/weather';
 import { Nav } from '@/components/Nav';
 import { PermaTipsCarousel } from '@/components/PermaTipsCarousel';
 import { Snackbar, type SnackState } from '@/components/Snackbar';
 import { getPlantTips } from '@/lib/permacultureTips';
 import {
-  Droplet, Sprout, Flower2, Sun, Cloud, CloudSun,
+  Droplet, Sprout, Flower2, Sun, Cloud, CloudRain, CloudSun,
   AlertTriangle, ShieldCheck, ArrowLeft, Pencil, Trash2, RefreshCw, type LucideIcon,
 } from 'lucide-react';
 import { T } from '@/lib/theme';
@@ -98,6 +99,8 @@ export default function PlantDetail() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting,      setDeleting]      = useState(false);
   const [snack,         setSnack]         = useState<SnackState>(null);
+  const [coords,        setCoords]        = useState<{ lat: number; lon: number } | null>(null);
+  const [weather,       setWeather]       = useState<WeatherForecast | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -116,6 +119,15 @@ export default function PlantDetail() {
     });
   }, [id, router, load]);
 
+  useEffect(() => {
+    getLocation().then(async loc => {
+      if (!loc) return;
+      setCoords(loc);
+      const forecast = await fetchWeather(loc.lat, loc.lon);
+      setWeather(forecast);
+    });
+  }, []);
+
   const openEdit = () => {
     if (!plant) return;
     setEditNickname(plant.nickname ?? '');
@@ -131,7 +143,7 @@ export default function PlantDetail() {
       light_level: editLight,
     };
     if (editLight && editLight !== plant.light_level) {
-      const engine = computeWatering({ baseWateringFrequency: plant.watering_frequency, light: editLight, lat: null });
+      const engine = computeWatering({ baseWateringFrequency: plant.watering_frequency, light: editLight, lat: coords?.lat ?? null, rainForecast: weather });
       const base = plant.last_watered ?? new Date().toISOString().slice(0, 10);
       updates.next_watering_due = nextWateringDate(base, engine.intervalDays);
     }
@@ -161,7 +173,7 @@ export default function PlantDetail() {
       .from('care_log').insert({ plant_id: id, user_id: u.user.id, action })
       .select('id').single();
     if (action === 'watered') {
-      const engine = computeWatering({ baseWateringFrequency: plant.watering_frequency, light: (plant.light_level as LightLevel) ?? null, lat: null });
+      const engine = computeWatering({ baseWateringFrequency: plant.watering_frequency, light: (plant.light_level as LightLevel) ?? null, lat: coords?.lat ?? null, rainForecast: weather });
       const today = new Date().toISOString().slice(0, 10);
       await supabase.from('plants').update({ last_watered: today, next_watering_due: nextWateringDate(today, engine.intervalDays) }).eq('id', id);
     }
@@ -335,6 +347,18 @@ export default function PlantDetail() {
             )}
           </div>
           <p style={{ margin: 0, fontSize: 13, color: T.sub, lineHeight: 1.5 }}>{plant.watering_tips}</p>
+          {weather && (() => {
+            const rainy = rainyDaysInWindow(weather, 7);
+            if (!rainy) return null;
+            return (
+              <div style={{ marginTop: 10, paddingTop: 10, borderTop: `0.5px solid ${overdue ? T.amberBorder : T.greenMid}`, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <CloudRain size={14} strokeWidth={2} color={overdue ? T.amberText : T.green} aria-hidden="true" />
+                <span style={{ fontSize: 12, color: overdue ? T.amberText : T.sub }}>
+                  {rainy} rainy day{rainy > 1 ? 's' : ''} in your 7-day forecast — schedule adjusted
+                </span>
+              </div>
+            );
+          })()}
         </GlassCard>
 
         {/* ── Light + pot info ── */}
@@ -488,6 +512,7 @@ export default function PlantDetail() {
             tips={getPlantTips(plant, 6)}
             heading={`Tips for ${plant.nickname || plant.plant_name}`}
             subject={plant.nickname || plant.plant_name}
+            rainyDays={weather ? rainyDaysInWindow(weather, 7) : null}
           />
         </motion.div>
 
