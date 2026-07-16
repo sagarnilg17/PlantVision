@@ -1,36 +1,31 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PlantVision
 
-## Getting Started
+AI-powered plant companion — identify plants from photos, diagnose health issues in real time, and get a care schedule tuned to your plant's actual environment.
 
-First, run the development server:
+Built with Next.js + Gemini 2.5 Flash. Ships as a web app and Android APK via Capacitor.
+
+---
+
+## Running locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Set `GEMINI_API_KEY` in a `.env.local` file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Docs
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| File | What it covers |
+|------|----------------|
+| [`PRODUCT.md`](PRODUCT.md) | Who this is for, what problem it solves, brand personality, and the design principles that govern every decision |
+| [`design.md`](design.md) | The full design system — color palette, typography, component specs, elevation, and the explicit do's/don'ts |
+| [`ANDROID.md`](ANDROID.md) | How to build and sign the Android APK via Capacitor |
+| [`memory.md`](memory.md) | Tech stack choices, architecture decisions, and gotchas captured as the project evolved |
+| [`pr.md`](pr.md) | PR template, branch naming conventions, and the changelog |
+| [`user_data.md`](user_data.md) | What user data is collected, how it's stored, what gets sent to external APIs, and the privacy checklist |
